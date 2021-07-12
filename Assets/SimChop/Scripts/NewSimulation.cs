@@ -60,7 +60,7 @@ public class NewSimulation : MonoBehaviour
 	public GameObject particle;
 	
 	float span;
-	const int N = 70;
+	const int N = 30;
 	GameObject[] levels;
 
 	Matrix4x4 unitScale; // performs transformation to unit cube
@@ -288,10 +288,10 @@ public class NewSimulation : MonoBehaviour
 	}
 	
 	void updatePositions(){
-		
+			
 		if (spawnCount > 0 && spawnCount != lastSpawnCount) {
 			lastSpawnCount = spawnCount;
-			//Debug.Log("spawnCount = " + spawnCount + " positionsArray length = " + positionsArray.Length);
+			Debug.Log("spawnCount = " + spawnCount + " positionsArray length = " + positionsArray.Length);
 			TakeDown();
 			Setup();
 		}
@@ -311,24 +311,24 @@ public class NewSimulation : MonoBehaviour
 			//control the bounds of what we are tracking
 			unitScale = SimulationHelper.createMatrixScale(width, height, depth);
 			// controls mapping 3D space to the unit cube
-			Matrix4x4 twoMap = SimulationHelper.createMatrixMapToTwoCube(precision);
+			Matrix4x4 posOctantMap = SimulationHelper.createMatrixMapToPosOctant(precision);
 			Matrix4x4 unitMap = SimulationHelper.createMatrixMapToUnitCube(unitScale, near);
 			
 			MapVolume mapJob = new MapVolume()
 			{
 				map_unit = unitMap,
-				map_shift = twoMap,
+				map_shift = posOctantMap,
 				pos = positionsArray,
 				mapped = transformedPositionsArray
 			};
 			mapJob.Run(spawnCount);
 			
-			//Debug.Log("Done.");
+			//Debug.Log("time: " + Time.realtimeSinceStartup);
 			
 				// computeOrder.SetMatrix(orderMatrixUnitId, unitMap);
-				// computeOrder.SetMatrix(orderMatrixTwoId, twoMap);
-			Shader.SetGlobalMatrix("unit_transform", unitMap);
-			Shader.SetGlobalMatrix("two_transform", twoMap);
+				// computeOrder.SetMatrix(orderMatrixTwoId, posOctantMap);
+			Shader.SetGlobalMatrix("unit_map", unitMap);
+			Shader.SetGlobalMatrix("pos_octant_map", posOctantMap);
 			
 			//Debug.Log("section = " + section);
 			//Shader.SetGlobalInt("section", section);
@@ -463,12 +463,15 @@ public class NewSimulation : MonoBehaviour
 			// );
 		//Debug.Log("number of particles inside the volume is " + num_inside_vol);
 		JobHandle sort = new JobHandle();
+		//Debug.Log("before quicksort time: " + Time.realtimeSinceStartup);
 		quicksort(
 			0, 
 			num_inside_vol-1, 
 			0,
 			ref sort
 		);
+		sort.Complete();
+		//Debug.Log("after quicksort time: " + Time.realtimeSinceStartup);
 		
 		// for(int i = 0; i < num_inside_vol; i++){
 		// 	Debug.Log("resArray[" + i + "]: " + resArray[i]);
@@ -573,16 +576,11 @@ public class NewSimulation : MonoBehaviour
 		JobHandle scheduled = sort.Schedule(parent);
 		scheduled.Complete();
 		
-		// Debug.Log(
-		// 	"LEVEL = " + level +
-		// 	", lo = " + lo +
-		// 	", left = " + sort.left +
-		// 	", right = " + sort.right + 
-		// 	", hi = " + hi
-		// );
+		int left_i = sort.left[lo];
+		int right_i = sort.right[lo];
 		
-		quicksort(lo, sort.left[lo]-1, level+1, ref scheduled);
-		quicksort(sort.right[lo]+1, hi, level+1, ref scheduled);
+		quicksort(lo, left_i-1, level+1, ref scheduled);
+		quicksort(right_i+1, hi, level+1, ref scheduled);
 	}
 	
 	private void setupInterleavingTextures(

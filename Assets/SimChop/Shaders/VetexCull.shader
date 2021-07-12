@@ -8,7 +8,6 @@ Shader "Unlit/VetexCull"
 	{
 		Blend SrcAlpha OneMinusSrcAlpha
 		Tags { "Queue"="Transparent" "RenderType"="Transparent" }
-		LOD 100
 
 		Pass
 		{
@@ -40,11 +39,9 @@ Shader "Unlit/VetexCull"
 			uniform sampler3D _posTex2;
 			uniform sampler3D _coordTex2;
 			uniform int particleAmount;
-			//https://mathworld.wolfram.com/SpherePacking.html
-			//uniform int section;
 
-			uniform float4x4 unit_transform;
-			uniform float4x4 two_transform; // note: this shifts unit cube before scaling to power of two sided cube
+			uniform float4x4 unit_map;
+			uniform float4x4 pos_octant_map; // note: this shifts unit cube to first octant in 3d-space
 			uniform float3 dimensions; // for the volume where particle positions are mapped
 			uniform float3 inv_dim;
 			uniform float3 tex_dimensions; // for the textures
@@ -90,17 +87,6 @@ Shader "Unlit/VetexCull"
 					return 1;
 				}
 				return 0;
-			}
-			
-			uint estimateSearch(uint2 bits, sampler3D tex, fixed4 first, fixed4 last) {
-				uint first_big_col   = (uint(first.r) << 16) + uint(first.g);
-				uint first_small_col = (uint(first.b) << 16) + uint(first.a);
-				uint last_big_col   = (uint(last.r) << 16) + uint(last.g);
-				uint last_small_col = (uint(last.b) << 16) + uint(last.a);
-				float range_big   = bits.y/(last_big_col - first_big_col);
-				float range_small = bits.x/(last_small_col - first_small_col);
-				float range = range_big*range_small;
-				return uint(particleAmount * range);
 			}
 			
 			uint binarySearch(uint2 bits, sampler3D tex){
@@ -195,8 +181,8 @@ Shader "Unlit/VetexCull"
 				
 				float3 scale = dimensions;//*pow(0.5, precision);
 				float3 worldPremap = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz;
-				float3 unitPos = mul(unit_transform, float4(worldPremap, 1)).xyz; // map to unit cube
-				float3 worldPos = mul(two_transform, float4(unitPos, 1)).xyz; // translate unit cube   ///// (map to 2^precision cube)
+				float3 unitPos = mul(unit_map, float4(worldPremap, 1)).xyz; // map to unit cube
+				float3 worldPos = mul(pos_octant_map, float4(unitPos, 1)).xyz; // translate unit cube   ///// (map to 2^precision cube)
 				o.position = worldPos;
 				o.uv = v.uv; // pass to frag shader if you are checking one of the Texture3Ds
 				
@@ -229,7 +215,6 @@ Shader "Unlit/VetexCull"
 				for (float z = -half_unit; z < 1.5*half_unit; z += 2*half_unit) { 
 					interleaved = getInterleaved(worldPos + float3(x, y, z), first_digits, digits);
 					locIndex = binarySearch(interleaved, _posTex2);
-					//locIndex = estimateSearch(interleaved, _posTex2, first, last);
 					result = lookup(locIndex, worldPos, d, closest, float3(x, y, z), scale, _coordTex2);
 					closest = result.xyz;
 					d = result.w;
@@ -241,22 +226,16 @@ Shader "Unlit/VetexCull"
 				
 				o.ro = float3((r - d)/r, d, 0);
 				
-				// checking interleaving z-order
-				//o.ro = float3(locIndex, interleaved[0], interleaved[1]); //float3((3 - d)*0.33, 0, 0);
-				
-				
 				o.position = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz;
 				
-				// checking coordinate space of particle positions
-				//o.position = float3(closest_i, 0, 0);
 				o.hitPos = closest;
 				return o;
 			}
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				float3 unitPos = mul(unit_transform, float4(i.position, 1)).xyz;
-				float3 worldPos = mul(two_transform, float4(unitPos, 1)).xyz;
+				float3 unitPos = mul(unit_map, float4(i.position, 1)).xyz;
+				float3 worldPos = mul(pos_octant_map, float4(unitPos, 1)).xyz;
 				//  unitPos += float3(0.5*dimensions.x, 0.5*dimensions.y, 0);
 				
 				

@@ -902,12 +902,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1831d6db4135bbb4299df1d7b83f2e66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnCount: 267
+  spawnCount: 1316
   alpha: 0.727
-  radius: 5
+  radius: 4
   source: {fileID: 1909415152}
-  spread: {x: 50, y: 300, z: 50}
-  precision: 5
+  spread: {x: 100, y: 300, z: 100}
+  precision: 4
   num_inside_vol: 0
   near: 20
   level: {fileID: 852792066095036995, guid: 83d4a98dc1357424d833b8a7c6b2b52b, type: 3}

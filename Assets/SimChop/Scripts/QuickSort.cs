@@ -54,10 +54,10 @@ public struct QuickSort : IJob
 			return 1;
 		
 		// additional comparison for culling
-		if (a_z < b_z)
-			return -1;
-		if (a_z > b_z)
-			return 1;
+		// if (a_z < b_z)
+		// 	return -1;
+		// if (a_z > b_z)
+		// 	return 1;
 		
 		return 0;
 	}
@@ -69,7 +69,9 @@ public struct QuickSort : IJob
 		float pivot_z = pos[lo].z;
 		//Debug.Log("pivot = " + pivot);
 		
+		left[lo] = lo;
 		int i = lo + 1;
+		right[lo] = hi;
 		
 		while (i <= right[lo]) {
 			if (compare(bits[i], pivot, pos[i].z, pivot_z) < 0)

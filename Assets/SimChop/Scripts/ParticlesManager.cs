@@ -100,6 +100,9 @@ public class ParticlesManager : MonoBehaviour
 				data.Active.TrimExcess();
 				data.N = n;
 			}
+			else if (data.N == n) {
+				//Debug.Log("Nothing changed");
+			}
 			else
 			{
 				Debug.Log(
