@@ -1,0 +1,28 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Order
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float3> _Positions;
+float4x4 _Unit;
+float4x4 _Two;
+uint _N;
+
+float3 Move(float3 p)
+{
+	// the w = 1 value in (p.xyz, 1) is to get translation operation in the matrix multiplication
+	float3 result = mul(_Unit, float4(p.xyz, 1)).xyz;
+	result = mul(_Two, float4(result, 1)).xyz;
+	return result;
+}
+
+[numthreads(1024,1,1)]
+void Order(
+	uint3 gId : SV_GroupID,
+	uint3 tId : SV_DispatchThreadID
+) {
+	if (tId.x < _N) {
+		float3 p = _Positions[tId.x];
+		_Positions[tId.x] = Move(p);
+	}
+}
