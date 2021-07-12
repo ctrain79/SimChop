@@ -12,7 +12,7 @@ public class NewSimulation : MonoBehaviour
 	public int spawnCount = default;
 	private int lastSpawnCount;
 	[SerializeField, Range(0, 1)]
-	public float alpha = default;
+	public float editor_alpha = default;
 	[SerializeField, Range(0.5f, 10)]
 	public float radius = default;
 	[SerializeField]
@@ -332,8 +332,8 @@ public class NewSimulation : MonoBehaviour
 			
 			//Debug.Log("section = " + section);
 			//Shader.SetGlobalInt("section", section);
-			Shader.SetGlobalFloat("alpha", alpha);
-			Shader.SetGlobalFloat("r", radius);
+			Shader.SetGlobalFloat("editor_alpha", editor_alpha);
+			Shader.SetGlobalFloat("radius", radius);
 				// int groups = Mathf.CeilToInt(spawnCount/1024.0f);
 				// computeOrder.SetInt(orderNumOfPartId, spawnCount);
 				
