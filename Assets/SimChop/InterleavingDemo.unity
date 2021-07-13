@@ -903,11 +903,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnCount: 1316
-  editor_alpha: 0
-  radius: 4
+  editor_alpha: 0.6
+  editor_emission: 0.25
+  editor_radius: 0
+  editor_precision: 4
   source: {fileID: 1909415152}
   spread: {x: 20, y: 300, z: 20}
-  precision: 4
   num_inside_vol: 0
   near: 20
   level: {fileID: 852792066095036995, guid: 83d4a98dc1357424d833b8a7c6b2b52b, type: 3}

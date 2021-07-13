@@ -5,7 +5,7 @@ using Unity.Jobs;
 using UnityEngine;
 using Unity.Collections;
 
-public class NewSimulation : MonoBehaviour
+public class Simulation : MonoBehaviour
 {
 	private const int MAX_PARTICLES = 4096;
 	[SerializeField, Range(0, MAX_PARTICLES-1)]
@@ -13,66 +13,61 @@ public class NewSimulation : MonoBehaviour
 	private int lastSpawnCount;
 	[SerializeField, Range(0, 1)]
 	public float editor_alpha = default;
+	[SerializeField, Range(0, 3)]
+	public float editor_emission = default;
 	[SerializeField, Range(0.5f, 10)]
-	public float radius = default;
+	public float editor_radius = default;
+	[SerializeField]
+	public int editor_precision = default;
 	[SerializeField]
 	public GameObject source = default;
 	[SerializeField]
 	public Vector3 spread = default;
 	[SerializeField]
-	public int precision = default;
-	public int num_inside_vol;
+	public float near = default; // camera near-plane distance
+	[SerializeField]
+	GameObject level = default;
+	public GameObject particle;
+	// set to public if you want to keep track of it in the editor (but you obviously cannot edit the number)
+	int num_inside_vol;
 	
-	// [SerializeField, Range(0, 0.2f)]
 	private float half_unit;
-	
 	public static float width;
 	public static float height;
 	public static float depth;
-	public float near = default; // camera near-plane distance
-	
-	// default, but changed in the Setup function
-	// private int precision;
-	// public int Precision {
-	// 	get { return precision; }
-	// 	set { precision = value; }
-	// }
 	
 	void setPrecisionAndDimensions() {
-		// pass in the radius
+		// pass in the editor_radius
 		//float min = Mathf.Min(width, height, depth);
-		//precision = (int)Mathf.Floor(Mathf.Log(3*min/(radius+1), 2)) - 1;
-		float sidelength = Mathf.Pow(2, precision)*1.5f*(radius+1); 
+		//precision = (int)Mathf.Floor(Mathf.Log(3*min/(editor_radius+1), 2)) - 1;
+		float sidelength = Mathf.Pow(2, editor_precision)*1.5f*(editor_radius+1);
+		// TO DO: map to frustum instead of cubical volume
 		width = height = sidelength;
 		depth = sidelength;
 	}
 	
 	ParticleData particleData;
 	Stack<GameObject> simObjs;
-	BoxCollider volumeCollider;
+	BoxCollider volumeCollider; // TO DO: have collider trigger adding/removing particles in addition to editor slider
 	
 	public static event Action<ParticleData> EnableEvent;
 	public static event Action InitializationEvent;
 	public static event Action<int> NumberOfParticlesChangedEvent;
-
-	[SerializeField]
-	GameObject level = default;
-	public GameObject particle;
+	
 	
 	float span;
 	const int N = 30;
 	GameObject[] levels;
-
+	
 	Matrix4x4 unitScale; // performs transformation to unit cube
 	Vector3 shift; // amount of translation for second interleaving data structure
-
-
+	
+	// jobs version
 	List<Vector3> restrictedPos = new List<Vector3>();
 	List<int> restrictedObj = new List<int>();
 	NativeArray<Vector3> resArray;
 	NativeArray<ulong> interleaved;
 	
-	// jobs version
 	NativeArray<Vector3> positionsArray;
 	NativeArray<Vector3> transformedPositionsArray;
 	NativeArray<int> left;
@@ -82,95 +77,34 @@ public class NewSimulation : MonoBehaviour
 	// Vector3[] positionsArray;
 	// Vector3[] transformedPositionsArray;
 	
-	// jobs for interleaving
-	NativeArray<ulong> naInterleaved;
-	NativeArray<Vector4> naPositionsArray;
-
-	//interleaveBinJob interleaveJob;
-	//  cullParticles cullJob;
-	JobHandle m_JobHandle;
-	JobHandle m_CullJobHandle;
-
+	
 	private const int X = 2048;
 	private const int Y = 2;
 	private const int Z = 1;
-	Texture3D positionTex;
+	Texture3D interleavedTex;
 	Texture3D rawPositionTex;
-	private float[] positionColors;
+	private float[] interleavedColors;
 	private float[] rawPositionColors;
 	
 	int stride = 4*3; /* num of bytes per data element in compute buffer */
 	static readonly int orderPosId = Shader.PropertyToID("_Positions"),
-	orderMatrixUnitId = Shader.PropertyToID("_Unit"),
-	orderMatrixTwoId = Shader.PropertyToID("_Two"),
+	orderMatrixToUnitId = Shader.PropertyToID("_Unit"),
+	orderMatrixUnitShiftId = Shader.PropertyToID("_Shift"),
 	orderNumOfPartId = Shader.PropertyToID("_N");
-//  NativeList<Vector4> culled;
+	
 	[SerializeField]
 	ComputeShader computeOrder = default;
 	ComputeBuffer transformedPositionsBuffer;
 	
 	// do not draw gizmos when not in play mode
 	bool playing = false;
-
-/*  struct cullParticles: IJobParallelFor{
-		public NativeArray<Vector4> positions;
-		public NativeList<Vector4> culledPositions;
-		public void Execute(int i){
-			if(position.x <= 1 && positions.y <= 1 && positions.z <= 1 && position.x >= 0 && positions.y >= 0 && positions.z >= 0){
-				culledPositions.Add(positions[i]);
-			}
-		}
-	}*/
-	
-	/*
-	struct interleaveBinJob: IJobParallelFor{
-		public NativeArray<Vector4> positions;
-		public NativeArray<ulong> interleavedPositions;
-		public void Execute(int i){
-			uint s1 = SimulationHelper.fToI(positions[i].x, precision);
-			uint s2 = SimulationHelper.fToI(positions[i].y, precision);
-			uint s3 = SimulationHelper.fToI(positions[i].z, precision);
-			// Debug.Log("s1 bin" + System.Convert.ToString(s1, 2));
-			// Debug.Log("s2 bin" + System.Convert.ToString(s2, 2));
-			// Debug.Log("s3 bin" + System.Convert.ToString(s3, 2));
-			int digits = (int)Mathf.Ceil(Mathf.Log(Mathf.Pow(10, precision),2));
-			ulong result = 0x00000000;
-			if(
-				positions[i].x <= 1 && 
-				positions[i].y <= 1 && 
-				positions[i].z <= 1 && 
-				positions[i].x >= 0 && 
-				positions[i].y >= 0 && 
-				positions[i].z >= 0
-			) {
-				for(int k = 0; k < digits; k++){
-					uint mask = (0x00000001);
-					result |= (ulong)(mask & s3) << (k*3);
-					result |= (ulong)(mask & s2) << (k*3+1);
-					result |= (ulong)(mask & s1) << (k*3+2);
-					s1 = s1 >> 1;
-					s2 = s2 >> 1;
-					s3 = s3 >> 1;
-				}
-			}
-			else{
-				result = 0xffffffffffffffff;
-			}
-
-
-			interleavedPositions[i] = result;
-			//Debug.Log("job done: " + interleavedPositions[i]);
-		}
-	}
-	*/
 	
 	// Start is called before the first frame update
 	void Start()
 	{
 		//Debug.Log("NewSimulation Start");
 		playing = true;
-		//radius = Mathf.Pow(0.5f, precision+1)*depth;
-		span = (depth-radius) / N;
+		span = (depth-editor_radius) / N;
 		levels = new GameObject[N];
 		for (int i = 0; i < N; i++) {
 			levels[i] = Instantiate(
@@ -186,19 +120,18 @@ public class NewSimulation : MonoBehaviour
 					1
 				);
 			levels[i].transform.localRotation = Quaternion.identity;
-			levels[i].transform.localPosition = new Vector3(0, 0, near + span*i + radius*0.5f);
+			levels[i].transform.localPosition = new Vector3(0, 0, near + span*i + editor_radius*0.5f);
 		}
 		
 		// setup textures for data strucures
-		positionTex = new Texture3D(X, Y, Z, TextureFormat.RGBAFloat, false);
+		interleavedTex = new Texture3D(X, Y, Z, TextureFormat.RGBAFloat, false);
 		rawPositionTex = new Texture3D(X, Y, Z, TextureFormat.RGBAFloat, false);
-		positionTex.wrapMode = TextureWrapMode.Clamp;
-		positionTex.filterMode = FilterMode.Point;
+		interleavedTex.wrapMode = TextureWrapMode.Clamp;
+		interleavedTex.filterMode = FilterMode.Point;
 		rawPositionTex.wrapMode = TextureWrapMode.Clamp;
 		rawPositionTex.filterMode = FilterMode.Point;
-		positionColors = new float[4*MAX_PARTICLES];
+		interleavedColors = new float[4*MAX_PARTICLES];
 		rawPositionColors = new float[4*MAX_PARTICLES];
-		
 	}
 	
 	// Project Settings: order called after NewSimulation (because of setting up events)
@@ -259,8 +192,8 @@ public class NewSimulation : MonoBehaviour
 	{
 		//Debug.Log("Setup");
 		setPrecisionAndDimensions();
-		//Debug.Log("precision = " + precision);
-		//shift = Mathf.Pow(0.5f, precision + 1)*(new Vector3(width, height, depth));
+		//Debug.Log("editor_precision = " + editor_precision);
+		//shift = Mathf.Pow(0.5f, editor_precision + 1)*(new Vector3(width, height, depth));
 		NumberOfParticlesChangedEvent(spawnCount);
 		//Debug.Log("interleaved length" + interleaved.Length);
 		
@@ -299,8 +232,8 @@ public class NewSimulation : MonoBehaviour
 		if (spawnCount > 0) {
 			
 			// move planes
-			half_unit = Mathf.Pow(0.5f, precision+1);
-			//radius = Mathf.Pow(0.5f, precision+1)*depth;
+			half_unit = Mathf.Pow(0.5f, editor_precision+1);
+			//editor_radius = Mathf.Pow(0.5f, editor_precision+1)*depth;
 			
 			// TO DO: get rid of redundant code
 			int j = 0;
@@ -311,7 +244,7 @@ public class NewSimulation : MonoBehaviour
 			//control the bounds of what we are tracking
 			unitScale = SimulationHelper.createMatrixScale(width, height, depth);
 			// controls mapping 3D space to the unit cube
-			Matrix4x4 posOctantMap = SimulationHelper.createMatrixMapToPosOctant(precision);
+			Matrix4x4 posOctantMap = SimulationHelper.createMatrixMapToPosOctant(editor_precision);
 			Matrix4x4 unitMap = SimulationHelper.createMatrixMapToUnitCube(unitScale, near);
 			
 			MapVolume mapJob = new MapVolume()
@@ -325,15 +258,16 @@ public class NewSimulation : MonoBehaviour
 			
 			//Debug.Log("time: " + Time.realtimeSinceStartup);
 			
-				// computeOrder.SetMatrix(orderMatrixUnitId, unitMap);
-				// computeOrder.SetMatrix(orderMatrixTwoId, posOctantMap);
+				// computeOrder.SetMatrix(orderMatrixToUnitId, unitMap);
+				// computeOrder.SetMatrix(orderMatrixUnitShiftId, posOctantMap);
 			Shader.SetGlobalMatrix("unit_map", unitMap);
 			Shader.SetGlobalMatrix("pos_octant_map", posOctantMap);
 			
 			//Debug.Log("section = " + section);
 			//Shader.SetGlobalInt("section", section);
 			Shader.SetGlobalFloat("editor_alpha", editor_alpha);
-			Shader.SetGlobalFloat("radius", radius);
+			Shader.SetGlobalFloat("editor_emission", editor_emission);
+			Shader.SetGlobalFloat("editor_radius", editor_radius);
 				// int groups = Mathf.CeilToInt(spawnCount/1024.0f);
 				// computeOrder.SetInt(orderNumOfPartId, spawnCount);
 				
@@ -351,30 +285,17 @@ public class NewSimulation : MonoBehaviour
 			//naInterleaved = new NativeArray<ulong>(interleaved,Allocator.Persistent);
 			//naPositionsArray= new NativeArray<Vector4>(positionsArray,Allocator.Persistent);
 			
-			int count = 1;
-			String posName = "_posTex";
-			String coordName = "_coordTex";
 			buildInterleaveShaderData(
-				posName + count.ToString(),
-				coordName + count.ToString(),
+				"interleaved_tex",
+				"coord_tex",
 				Vector3.zero
 			);
-			count++;
 			buildInterleaveShaderData(
-				posName + count.ToString(),
-				coordName + count.ToString(),
+				"interleaved_shifted_half_unit_tex",
+				"coord_shifted_half_unit_tex",
 				Vector3.one*half_unit
 			);
-			// for (int x = -1; x < 2; x += 2) {
-			// for (int y = -1; y < 2; y += 2) {
-			// for (int z = -1; z < 2; z += 2) {
-			// 	buildInterleaveShaderData(
-			// 		posName + count.ToString(),
-			// 		coordName + count.ToString(),
-			// 		new Vector3(x*0.5f, y*0.5f, z*0.5f)
-			// 	);
-			// 	count++;
-			// }}}
+			
 		}
 	}
 
@@ -383,16 +304,9 @@ public class NewSimulation : MonoBehaviour
 	) {
 		num_inside_vol = 0;
 		ulong result = 0x00000000;
-		float unit = Mathf.Pow(0.5f, precision);
-		float two = Mathf.Pow(2, precision);
-		// Debug.Log("Number of binary digits: " + digits);
-		for(int i = 0; i < spawnCount; i++){
-			// Debug.Log(
-			// 	"transformed position " +
-			// 	i.ToString() + 
-			// 	" at " +
-			// 	transformedPositionsArray[i].ToString()
-			// );
+		float unit = Mathf.Pow(0.5f, editor_precision);
+		float two = Mathf.Pow(2, editor_precision);
+		for(int i = 0; i < spawnCount; i++) {
 			if (
 				transformedPositionsArray[i].x <= 1-unit && 
 				transformedPositionsArray[i].y <= 1-unit && 
@@ -401,30 +315,11 @@ public class NewSimulation : MonoBehaviour
 				transformedPositionsArray[i].y >= unit && 
 				transformedPositionsArray[i].z >= unit
 			) {
-				// Debug.Log(
-				// 	"transformed position " +
-				// 	i.ToString() + 
-				// 	" at " +
-				// 	transformedPositionsArray[i].ToString() +
-				// 	" is in unit cube"
-				// );
 				result = 0;
-				// uint s1 = SimulationHelper.fToI(transformedPositionsArray[i].x, precision);
-				// uint s2 = SimulationHelper.fToI(transformedPositionsArray[i].y, precision);
-				// uint s3 = SimulationHelper.fToI(transformedPositionsArray[i].z, precision);
 				uint s1 = (uint)(Mathf.Floor(transformedPositionsArray[i].x*two + offset.x));
 				uint s2 = (uint)(Mathf.Floor(transformedPositionsArray[i].y*two + offset.y));
 				uint s3 = (uint)(Mathf.Floor(transformedPositionsArray[i].z*two + offset.z));
-				// Debug.Log("resArray[" + i + "]: " + transformedPositionsArray[i]);
-				// Debug.Log(
-				// 	"s1 = " + 
-				// 	System.Convert.ToString(s1, 2) +
-				// 	", s2 = " + 
-				// 	System.Convert.ToString(s2, 2) +
-				// 	", s3 = " + 
-				// 	System.Convert.ToString(s3, 2)
-				// );
-				for(int k = 0; k < precision; k++){
+				for(int k = 0; k < editor_precision; k++){
 					uint mask = (0x1);
 					result |= (ulong)(mask & s3) << (k*3);
 					result |= (ulong)(mask & s2) << (k*3+1);
@@ -433,15 +328,7 @@ public class NewSimulation : MonoBehaviour
 					s2 = s2 >> 1;
 					s3 = s3 >> 1;
 				}
-				// Debug.Log(
-				// 	i + ": (" + 
-				// 	System.Convert.ToString((uint)(result >> 32) & 0xFFFFFFFF, 2) +
-				// 	System.Convert.ToString((uint)(result) & 0xFFFFFFFF, 2) +
-				// 	")"
-				// );
 				resArray[num_inside_vol] = transformedPositionsArray[i];
-				//Debug.Log(transformedPositionsArray[i].ToString());
-				//result = result | (1u << 3*precision);
 				interleaved[num_inside_vol] = result;
 				num_inside_vol++;
 			}
@@ -449,21 +336,13 @@ public class NewSimulation : MonoBehaviour
 	}
 	
 	private void buildInterleaveShaderData(
-		string pos_uniform,
-		string coord_uniform,
+		string interleavedTexUniform,
+		string coordTexUniform,
 		Vector3 offset
 	) {
 		interleave(offset);
 		
-		//ulong[] sortedBinary = 
-			// MergeSort.mergeSort(
-			// 	interleaved, 
-			// 	ref resArray,
-			// 	0
-			// );
-		//Debug.Log("number of particles inside the volume is " + num_inside_vol);
 		JobHandle sort = new JobHandle();
-		//Debug.Log("before quicksort time: " + Time.realtimeSinceStartup);
 		quicksort(
 			0, 
 			num_inside_vol-1, 
@@ -471,29 +350,6 @@ public class NewSimulation : MonoBehaviour
 			ref sort
 		);
 		sort.Complete();
-		//Debug.Log("after quicksort time: " + Time.realtimeSinceStartup);
-		
-		// for(int i = 0; i < num_inside_vol; i++){
-		// 	Debug.Log("resArray[" + i + "]: " + resArray[i]);
-		// 	Debug.Log(
-		// 		"resArray in binary: (" + 
-		// 		System.Convert.ToString((uint)(interleaved[i] >> 32) & 0xFFFFFFFF, 2) +
-		// 		System.Convert.ToString((uint)(interleaved[i]) & 0xFFFFFFFF, 2) +
-		// 		")"
-		// 	);
-		// }
-		// Debug.Log("Done.");
-		
-		// ulong[] check = check_interleave(resArray);
-		// for(int i = 0; i < check.Length; i++){
-		// 	Debug.Log("check_interleave[" + i + "]: " + check[i]);
-		// 	Debug.Log(
-		// 		"check   in binary(" + 
-		// 		System.Convert.ToString((uint)(check[i] >> 32) & 0xFFFFFFFF, 2) +
-		// 		System.Convert.ToString((uint)(check[i]) & 0xFFFFFFFF, 2) +
-		// 		")"
-		// 	);
-		// }
 		
 		//set up 3d texture
 		// int powTwo = (int)Mathf.Pow(2, Mathf.Ceil(Mathf.Log(num_inside_vol, 2))); // texture needs to be a perfect power of 2
@@ -510,46 +366,17 @@ public class NewSimulation : MonoBehaviour
 		Vector3 tex_dimensions = new Vector3(X,Y,Z); // TO DO: extend dimensions
 		
 		Shader.SetGlobalVector("tex_dimensions", tex_dimensions);
-		Shader.SetGlobalVector("dimensions", new Vector3(width, height, depth));
-		Shader.SetGlobalInt("precision", precision);
+		Shader.SetGlobalVector("vol_dimensions", new Vector3(width, height, depth));
+		Shader.SetGlobalInt("editor_precision", editor_precision);
 		Shader.SetGlobalFloat("half_unit", half_unit);
-		Shader.SetGlobalInt("particleAmount", num_inside_vol);
+		Shader.SetGlobalInt("num_inside_vol", num_inside_vol);
 		
 		setupInterleavingTextures(
-			pos_uniform,
-			coord_uniform,
-			offset*Mathf.Pow(0.5f, precision)
+			interleavedTexUniform,
+			coordTexUniform,
+			offset*Mathf.Pow(0.5f, editor_precision)
 		);
-
-		// ---- check texture data
-		// NativeArray<float> positionColors = positionTex.GetPixelData<float>(0);
-		// Debug.Log(
-		// 	"binary interleaved positionColors = " + string.Join(", ",
-		// 	new List<float>(positionColors).ConvertAll(i => i.ToString()))
-		// );
-		// positionColors.Dispose();
-		// NativeArray<float> rawPositionColors = rawPositionTex.GetPixelData<float>(0);
-		// Debug.Log(
-		// 	"positions rawPositionColors = " + string.Join(", ",
-		// 	new List<float>(rawPositionColors).ConvertAll(i => i.ToString()))
-		// );
-		// rawPositionColors.Dispose();
 		
-		/*  interleaveJob = new interleaveBinJob(){
-			positions = naPositionsArray,
-			interleavedPositions = naInterleaved,
-			precision = 3
-		};*/
-
-		/*cullJob = new cullParticles(){
-			positions = naPositionsArray,
-			culledPositions = culled
-		};*/
-		//  m_CullJobHandle = cullParticles.Schedule(spawnCount,64);
-		//m_JobHandle = interleaveJob.Schedule(spawnCount, 64);
-
-
-		//Shader.SetGlobalVectorArray("positionsArray", positionsArray);
 	}
 	
 	private void quicksort(
@@ -584,36 +411,31 @@ public class NewSimulation : MonoBehaviour
 	}
 	
 	private void setupInterleavingTextures(
-		string pos_uniform,
-		string coord_uniform,
+		string interleavedTexUniform,
+		string coordTexUniform,
 		Vector3 offset
 	) {
 		
 		getTex();
 		getTexVec();
 		
-		Shader.SetGlobalTexture(pos_uniform, positionTex);
-		Shader.SetGlobalTexture(coord_uniform, rawPositionTex);
+		Shader.SetGlobalTexture(interleavedTexUniform, interleavedTex);
+		Shader.SetGlobalTexture(coordTexUniform, rawPositionTex);
 	}
-
-	// TO DO: setup positionColors declared with a max size and reuse array instead of initializing a new one each frame
+	
 	private void getTex()
 	{
-		positionTex.SetPixelData(positionColors, 0, 0);
-		positionTex.Apply();
+		interleavedTex.SetPixelData(interleavedColors, 0, 0);
+		interleavedTex.Apply();
 		for (int i = 0; i < num_inside_vol*4; i+=4)
 		{
-			// Debug.Log("interleaved length" + interleaved.Length);
-			// Debug.Log("positionColors: interleaved[" + i/4 + "] = " + interleaved[i/4]);
-			positionColors[i]   = (float)(0x3FFF & (interleaved[i/4] >> 46));
-			positionColors[i+1] = (float)(0xFFFF & (interleaved[i/4] >> 30));
-			positionColors[i+2] = (float)(0x3FFF & (interleaved[i/4] >> 16));
-			positionColors[i+3] = (float)(0xFFFF & (interleaved[i/4]));
+			interleavedColors[i]   = (float)(0x3FFF & (interleaved[i/4] >> 46));
+			interleavedColors[i+1] = (float)(0xFFFF & (interleaved[i/4] >> 30));
+			interleavedColors[i+2] = (float)(0x3FFF & (interleaved[i/4] >> 16));
+			interleavedColors[i+3] = (float)(0xFFFF & (interleaved[i/4]));
 		}
-		//Debug.Log("positionColors[3] = " + positionColors[3].ToString());
-		//Debug.Log("positions length " + positionColors.Length);
-		positionTex.SetPixelData(positionColors, 0, 0);
-		positionTex.Apply();
+		interleavedTex.SetPixelData(interleavedColors, 0, 0);
+		interleavedTex.Apply();
 	}
 
 	private void getTexVec()
@@ -622,14 +444,11 @@ public class NewSimulation : MonoBehaviour
 		rawPositionTex.Apply();
 		for (int i = 0; i < num_inside_vol*4; i+=4)
 		{
-			//Debug.Log("positionColors: interleaved[" + i + "] = " + pos[i/4].ToString());
 			rawPositionColors[i]   = resArray[i/4].x;
 			rawPositionColors[i+1] = resArray[i/4].y;
 			rawPositionColors[i+2] = resArray[i/4].z;
 			rawPositionColors[i+3] = 0;
 		}
-		//Debug.Log("rawPositionColors[0] = " + rawPositionColors[0].ToString());
-		//Debug.Log("raw positions " + rawPositionColors.Length);
 		rawPositionTex.SetPixelData(rawPositionColors, 0, 0);
 		rawPositionTex.Apply();
 	}
@@ -638,7 +457,7 @@ public class NewSimulation : MonoBehaviour
 		if (playing) {
 			GameObject cam = GameObject.FindWithTag("MainCamera");
 			
-			// Vector3 unit = Mathf.Pow(0.5f, precision)*(new Vector3(width, height, depth));
+			// Vector3 unit = Mathf.Pow(0.5f, editor_precision)*(new Vector3(width, height, depth));
 			// Gizmos.color = new Color(1, 1, 1, 1);
 			// for (int i = 0; i*unit.x < width; i++) {
 			// 	for (int j = 0; j*unit.y < height; j++) {

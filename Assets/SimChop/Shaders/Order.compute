@@ -5,14 +5,14 @@
 // with cs.SetTexture
 RWStructuredBuffer<float3> _Positions;
 float4x4 _Unit;
-float4x4 _Two;
+float4x4 _Shift;
 uint _N;
 
 float3 Move(float3 p)
 {
 	// the w = 1 value in (p.xyz, 1) is to get translation operation in the matrix multiplication
 	float3 result = mul(_Unit, float4(p.xyz, 1)).xyz;
-	result = mul(_Two, float4(result, 1)).xyz;
+	result = mul(_Shift, float4(result, 1)).xyz;
 	return result;
 }
 
