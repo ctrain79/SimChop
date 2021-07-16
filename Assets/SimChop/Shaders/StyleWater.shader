@@ -1,8 +1,9 @@
-Shader "Unlit/VetexCull"
+Shader "Unlit/StyleWater"
 {
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
+		_CubeMap ("CubeMap", CUBE) = ""{}
 	}
 	SubShader
 	{
@@ -12,16 +13,18 @@ Shader "Unlit/VetexCull"
 		CGPROGRAM
 		#pragma editor_sync_compilation
 		#pragma surface surf Lambert vertex:vert alpha:fade
+		#pragma target 3.5
 
-		#include "UnityCG.cginc"
 
 		struct Input {
 			float2 uv_MainTex;
 			float3 worldPos;
+			float dist;
 			nointerpolation float4 customColor;
 			float4 screenPos;
+			float3 worldRefl;
 		};
-
+		samplerCUBE _CubeMap;
 		uniform sampler3D _posTex1;
 		uniform sampler3D _coordTex1;
 		uniform sampler3D _posTex2;
@@ -206,6 +209,9 @@ Shader "Unlit/VetexCull"
 			if (d >= radius + 1){
 				v.vertex.x = 0.0/0.0; // usual trick of setting w to NaN is ignored by Unity with vertex/surface combo
 			}
+			else{
+				o.dist = d;
+			}
 
 			o.worldPos = worldPremap;
 			o.customColor = float4(w_pos, (radius - d)/radius);
@@ -215,10 +221,14 @@ Shader "Unlit/VetexCull"
 
 		void surf(Input IN, inout SurfaceOutput o)
 		{
-			if (IN.customColor.a < 0) discard;
-			o.Albedo = IN.customColor.rgb;
-			o.Alpha = IN.customColor.a;
-			o.Emission = fixed3(0.5, 0.5, 0.5);
+			float d = IN.dist;
+		//	d *= sin(IN.worldPos.y+_Time.y)+2;
+			o.Alpha = smoothstep(4,3.9,d);
+			o.Albedo =float3(0,.6,1.)*smoothstep(4,3,d);
+			o.Albedo = max(float3(1,1,1)*smoothstep(3,4,d),o.Albedo);
+			//o.Albedo *= texCUBE (_CubeMap, IN.worldRefl).rgb;
+		//	o.Alpha = IN.customColor.a;
+			o.Emission = texCUBE (_CubeMap, IN.worldRefl).rgb;
 			//o.Alpha = 0.5;
 		}
 
