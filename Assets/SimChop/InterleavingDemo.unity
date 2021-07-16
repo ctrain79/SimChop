@@ -742,7 +742,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 907759926}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 30, z: -20}
+  m_LocalPosition: {x: 0, y: 30, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1607541083}
@@ -905,13 +905,14 @@ MonoBehaviour:
   spawnCount: 1316
   editor_alpha: 0.6
   editor_emission: 0.25
-  editor_radius: 0
-  editor_precision: 4
+  editor_radius: 6
+  scan_num: 5
   source: {fileID: 1909415152}
   spread: {x: 20, y: 300, z: 20}
-  num_inside_vol: 0
-  near: 20
+  near: 5
+  far: 150
   level: {fileID: 852792066095036995, guid: 83d4a98dc1357424d833b8a7c6b2b52b, type: 3}
+  visible: 1
   particle: {fileID: 829214448227663622, guid: d3b2d14bc30e0c04b93fd10259d04b5c, type: 3}
   computeOrder: {fileID: 7200000, guid: 6cf891b594722814bb8f530314e93486, type: 3}
 --- !u!4 &1607541083

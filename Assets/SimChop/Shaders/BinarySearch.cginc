@@ -83,17 +83,18 @@ uint binarySearch(
 }
 
 uint2 getInterleaved(
-	float3 w_pos, 
+	float3 w_pos,
+	float3 shift,
 	uint first_digits, 
 	uint digits, 
 	uint precision
 ) {
 	uint2 interleaved = 
 		{ 0, 0 };
-	uint iX = uint(w_pos.x*pow(2, precision));
-	uint iY = uint(w_pos.y*pow(2, precision));
-	uint iZ = uint(w_pos.z*pow(2, precision));
-
+	uint iX = floor(w_pos.x*pow(2, precision)) + shift.x;
+	uint iY = floor(w_pos.y*pow(2, precision)) + shift.y;
+	uint iZ = floor(w_pos.z*pow(2, precision)) + shift.z;
+	
 	for(uint k = 0; k < first_digits; k++){
 		interleaved.x |= (0x1 & iZ) << (3*k);
 		interleaved.x |= (0x1 & iY) << (3*k+1);
@@ -127,11 +128,12 @@ float4 lookup(
 	float3 closest, 
 	float3 shift, 
 	float3 scale, 
+	int scan_num,
 	sampler3D tex, 
 	float3 dim, 
 	int num_inside_vol
 ) {
-	for(int j = -5; j < 5; j++){
+	for(int j = -scan_num; j < scan_num; j++){
 			
 		fixed4 p = tex3Dlod(tex, posCoord_index(i+j, dim, num_inside_vol));
 		float distance = length((w_pos.xyz - float3(p.rgb))*scale);

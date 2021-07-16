@@ -8,6 +8,9 @@ using Unity.Collections;
 public class Simulation : MonoBehaviour
 {
 	private const int MAX_PARTICLES = 4096;
+	
+	[Header("Hot Swappable")]
+	
 	[SerializeField, Range(0, MAX_PARTICLES-1)]
 	public int spawnCount = default;
 	private int lastSpawnCount;
@@ -16,34 +19,55 @@ public class Simulation : MonoBehaviour
 	[SerializeField, Range(0, 3)]
 	public float editor_emission = default;
 	[SerializeField, Range(0.5f, 10)]
-	public float editor_radius = default;
+	public float editor_radius = 4;
+	[SerializeField, Range(1, 20)]
+	public int scan_num = default;
 	[SerializeField]
-	public int editor_precision = default;
+	public float near = default; // camera near-plane distance
+	[SerializeField]
+	public float far = default; // camera far-plane distance
+	
+	[Header("Not Hot Swappable")]
 	[SerializeField]
 	public GameObject source = default;
 	[SerializeField]
 	public Vector3 spread = default;
 	[SerializeField]
-	public float near = default; // camera near-plane distance
-	[SerializeField]
 	GameObject level = default;
+	public bool visibleInHierarchy = true; 
 	public GameObject particle;
+	
 	// set to public if you want to keep track of it in the editor (but you obviously cannot edit the number)
 	int num_inside_vol;
 	
-	private float half_unit;
-	public static float width;
-	public static float height;
-	public static float depth;
+	int precision;
+	float width;
+	float height;
+	float depth;
+	float camH;
+	float camW;
 	
 	void setPrecisionAndDimensions() {
-		// pass in the editor_radius
-		//float min = Mathf.Min(width, height, depth);
-		//precision = (int)Mathf.Floor(Mathf.Log(3*min/(editor_radius+1), 2)) - 1;
-		float sidelength = Mathf.Pow(2, editor_precision)*1.5f*(editor_radius+1);
-		// TO DO: map to frustum instead of cubical volume
+		camH = Mathf.Tan(Camera.main.fieldOfView*Mathf.PI/360);
+		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(Camera.main.fieldOfView, Camera.main.aspect)*Mathf.PI/360);
+		
+		// float k = Mathf.Ceil(Mathf.Log(2 * camW * far, 2));
+		// width = Mathf.Pow(2, k); // so the volume covers the furthest part of camera view
+		//width = 2 * camW * far;
+		
+		// k = Mathf.Ceil(Mathf.Log(2 * camH * far, 2));
+		// height = Mathf.Pow(2, k); // so the volume covers the furthest part of camera view
+		// height = 2 * camH * far;
+		depth = far - near;
+		
+		precision = 4;
+		float sidelength = Mathf.Pow(2, precision)*1.6f*(editor_radius+1);
 		width = height = sidelength;
-		depth = sidelength;
+		//precision = (int)Mathf.Floor(Mathf.Log(sidelength/(editor_radius+1), 2)) - 1;
+		Debug.Log("precision = " + precision);
+		Debug.Log("sidelength = " + sidelength);
+		Debug.Log("cell size = " + sidelength*Mathf.Pow(0.5f, precision));
+		Debug.Log("editor radius = " + editor_radius);
 	}
 	
 	ParticleData particleData;
@@ -121,6 +145,13 @@ public class Simulation : MonoBehaviour
 				);
 			levels[i].transform.localRotation = Quaternion.identity;
 			levels[i].transform.localPosition = new Vector3(0, 0, near + span*i + editor_radius*0.5f);
+			
+			HideFlags inHierarchy = 
+				visibleInHierarchy ? 
+				HideFlags.None : 
+				HideFlags.HideInHierarchy;
+			levels[i].hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | inHierarchy;
+			
 		}
 		
 		// setup textures for data strucures
@@ -192,8 +223,8 @@ public class Simulation : MonoBehaviour
 	{
 		//Debug.Log("Setup");
 		setPrecisionAndDimensions();
-		//Debug.Log("editor_precision = " + editor_precision);
-		//shift = Mathf.Pow(0.5f, editor_precision + 1)*(new Vector3(width, height, depth));
+		//Debug.Log("precision = " + precision);
+		//shift = Mathf.Pow(0.5f, precision + 1)*(new Vector3(width, height, depth));
 		NumberOfParticlesChangedEvent(spawnCount);
 		//Debug.Log("interleaved length" + interleaved.Length);
 		
@@ -231,9 +262,7 @@ public class Simulation : MonoBehaviour
 		
 		if (spawnCount > 0) {
 			
-			// move planes
-			half_unit = Mathf.Pow(0.5f, editor_precision+1);
-			//editor_radius = Mathf.Pow(0.5f, editor_precision+1)*depth;
+			//editor_radius = Mathf.Pow(0.5f, precision+1)*depth;
 			
 			// TO DO: get rid of redundant code
 			int j = 0;
@@ -244,7 +273,7 @@ public class Simulation : MonoBehaviour
 			//control the bounds of what we are tracking
 			unitScale = SimulationHelper.createMatrixScale(width, height, depth);
 			// controls mapping 3D space to the unit cube
-			Matrix4x4 posOctantMap = SimulationHelper.createMatrixMapToPosOctant(editor_precision);
+			Matrix4x4 posOctantMap = SimulationHelper.createMatrixMapToPosOctant();
 			Matrix4x4 unitMap = SimulationHelper.createMatrixMapToUnitCube(unitScale, near);
 			
 			MapVolume mapJob = new MapVolume()
@@ -267,7 +296,9 @@ public class Simulation : MonoBehaviour
 			//Shader.SetGlobalInt("section", section);
 			Shader.SetGlobalFloat("editor_alpha", editor_alpha);
 			Shader.SetGlobalFloat("editor_emission", editor_emission);
+			Shader.SetGlobalFloat("precision", precision);
 			Shader.SetGlobalFloat("editor_radius", editor_radius);
+			Shader.SetGlobalInt("scan_num", scan_num);
 				// int groups = Mathf.CeilToInt(spawnCount/1024.0f);
 				// computeOrder.SetInt(orderNumOfPartId, spawnCount);
 				
@@ -293,7 +324,7 @@ public class Simulation : MonoBehaviour
 			buildInterleaveShaderData(
 				"interleaved_shifted_half_unit_tex",
 				"coord_shifted_half_unit_tex",
-				Vector3.one*half_unit
+				Vector3.one*Mathf.Pow(0.5f, precision+1)
 			);
 			
 		}
@@ -304,8 +335,8 @@ public class Simulation : MonoBehaviour
 	) {
 		num_inside_vol = 0;
 		ulong result = 0x00000000;
-		float unit = Mathf.Pow(0.5f, editor_precision);
-		float two = Mathf.Pow(2, editor_precision);
+		float unit = Mathf.Pow(0.5f, precision);
+		float two = Mathf.Pow(2, precision);
 		for(int i = 0; i < spawnCount; i++) {
 			if (
 				transformedPositionsArray[i].x <= 1-unit && 
@@ -316,10 +347,10 @@ public class Simulation : MonoBehaviour
 				transformedPositionsArray[i].z >= unit
 			) {
 				result = 0;
-				uint s1 = (uint)(Mathf.Floor(transformedPositionsArray[i].x*two + offset.x));
-				uint s2 = (uint)(Mathf.Floor(transformedPositionsArray[i].y*two + offset.y));
-				uint s3 = (uint)(Mathf.Floor(transformedPositionsArray[i].z*two + offset.z));
-				for(int k = 0; k < editor_precision; k++){
+				uint s1 = (uint)(Mathf.Floor((transformedPositionsArray[i].x + offset.x)*two));
+				uint s2 = (uint)(Mathf.Floor((transformedPositionsArray[i].y + offset.y)*two));
+				uint s3 = (uint)(Mathf.Floor((transformedPositionsArray[i].z + offset.z)*two));
+				for(int k = 0; k < precision; k++){
 					uint mask = (0x1);
 					result |= (ulong)(mask & s3) << (k*3);
 					result |= (ulong)(mask & s2) << (k*3+1);
@@ -367,14 +398,13 @@ public class Simulation : MonoBehaviour
 		
 		Shader.SetGlobalVector("tex_dimensions", tex_dimensions);
 		Shader.SetGlobalVector("vol_dimensions", new Vector3(width, height, depth));
-		Shader.SetGlobalInt("editor_precision", editor_precision);
-		Shader.SetGlobalFloat("half_unit", half_unit);
+		Shader.SetGlobalInt("precision", precision);
 		Shader.SetGlobalInt("num_inside_vol", num_inside_vol);
 		
 		setupInterleavingTextures(
 			interleavedTexUniform,
 			coordTexUniform,
-			offset*Mathf.Pow(0.5f, editor_precision)
+			offset*Mathf.Pow(0.5f, precision)
 		);
 		
 	}
@@ -457,7 +487,7 @@ public class Simulation : MonoBehaviour
 		if (playing) {
 			GameObject cam = GameObject.FindWithTag("MainCamera");
 			
-			// Vector3 unit = Mathf.Pow(0.5f, editor_precision)*(new Vector3(width, height, depth));
+			// Vector3 unit = Mathf.Pow(0.5f, precision)*(new Vector3(width, height, depth));
 			// Gizmos.color = new Color(1, 1, 1, 1);
 			// for (int i = 0; i*unit.x < width; i++) {
 			// 	for (int j = 0; j*unit.y < height; j++) {

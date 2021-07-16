@@ -8,6 +8,7 @@ Shader "SimChop/InterleaveSystem"
 		CGPROGRAM
 		#pragma editor_sync_compilation
 		#pragma surface surf Lambert vertex:vert alpha:fade
+		#pragma target 3.5
 
 		#include "UnityCG.cginc"
 		#include "BinarySearch.cginc"
@@ -28,18 +29,17 @@ Shader "SimChop/InterleaveSystem"
 		uniform float4x4 unit_map;
 		uniform float4x4 pos_octant_map; // note: this shifts unit cube to first octant in 3d-space
 		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
-		uniform float3 inv_dim;
 		uniform float3 tex_dimensions; // for the textures
-		uniform uint editor_precision;
+		uniform uint precision;
 		uniform float editor_radius;
+		uniform int scan_num;
 		uniform float editor_alpha;
 		uniform float editor_emission;
-		uniform float half_unit;
 		
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
-			uint digits = 3*editor_precision;
+			uint digits = 3*precision;
 			
 			uint first_digits = 
 				(digits > 10) ?
@@ -52,7 +52,7 @@ Shader "SimChop/InterleaveSystem"
 			float3 unitPos = 
 				mul(unit_map, float4(worldPremap, 1)).xyz; // map to unit cube
 			float3 w_pos = 
-				mul(pos_octant_map, float4(unitPos, 1)).xyz; // translate unit cube0
+				mul(pos_octant_map, float4(unitPos, 1)).xyz; // translate unit cube
 			
 			float3 closest = vol_dimensions;
 			uint closest_i = 0;
@@ -73,18 +73,19 @@ Shader "SimChop/InterleaveSystem"
 			
 			uint2 interleaved = 
 				getInterleaved(
-					w_pos, 
+					w_pos,
+					float3(0, 0, 0), 
 					first_digits, 
 					digits, 
-					editor_precision
+					precision
 				);
 			// cull vertices beyond volume where particles are located
-			if (
-				compare(interleaved, first) < 0 || 
-				compare(interleaved, last) > 0
-			) {
-				v.vertex.x = 0.0/0.0;
-			}
+			// if (
+			// 	compare(interleaved, first) < 0 || 
+			// 	compare(interleaved, last) > 0
+			// ) {
+			// 	v.vertex.x = 0.0/0.0;
+			// }
 			
 			// check shifted neighbouring octants
 			uint locIndex = 
@@ -102,6 +103,7 @@ Shader "SimChop/InterleaveSystem"
 					closest, 
 					float3(0, 0, 0), 
 					scale, 
+					scan_num,
 					coord_tex, 
 					tex_dimensions, 
 					num_inside_vol
@@ -109,15 +111,16 @@ Shader "SimChop/InterleaveSystem"
 			closest = result.xyz;
 			d = result.w;
 			
-			for (float x = -half_unit; x < 1.5*half_unit; x += 2*half_unit) {
-			for (float y = -half_unit; y < 1.5*half_unit; y += 2*half_unit) {
-			for (float z = -half_unit; z < 1.5*half_unit; z += 2*half_unit) { 
+			for (float x = 0; x < 2; x += 1) {
+			for (float y = 0; y < 2; y += 1) {
+			for (float z = 0; z < 2; z += 1) { 
 				interleaved = 
 					getInterleaved(
-						w_pos + float3(x, y, z), 
+						w_pos,
+						float3(x, y, z), 
 						first_digits, 
 						digits, 
-						editor_precision
+						precision
 					);
 				locIndex = 
 					binarySearch(
@@ -134,6 +137,7 @@ Shader "SimChop/InterleaveSystem"
 						closest, 
 						float3(x, y, z), 
 						scale, 
+						scan_num,
 						coord_shifted_half_unit_tex, 
 						tex_dimensions, 
 						num_inside_vol
