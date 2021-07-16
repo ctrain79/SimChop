@@ -87,13 +87,14 @@ uint2 getInterleaved(
 	float3 shift,
 	uint first_digits, 
 	uint digits, 
-	uint precision
+	float precision,
+	float scale
 ) {
 	uint2 interleaved = 
 		{ 0, 0 };
-	uint iX = floor(w_pos.x*pow(2, precision)) + shift.x;
-	uint iY = floor(w_pos.y*pow(2, precision)) + shift.y;
-	uint iZ = floor(w_pos.z*pow(2, precision)) + shift.z;
+	uint iX = floor(w_pos.x*scale) + (1 + frac(precision))*shift.x;
+	uint iY = floor(w_pos.y*scale) + (1 + frac(precision))*shift.y;
+	uint iZ = floor(w_pos.z*scale) + (1 + frac(precision))*shift.z;
 	
 	for(uint k = 0; k < first_digits; k++){
 		interleaved.x |= (0x1 & iZ) << (3*k);

@@ -903,16 +903,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnCount: 1316
-  editor_alpha: 0.6
-  editor_emission: 0.25
-  editor_radius: 6
-  scan_num: 5
-  source: {fileID: 1909415152}
-  spread: {x: 20, y: 300, z: 20}
+  editor_alpha: 0.801
+  editor_emission: 0.3
+  editor_radius: 4
+  scan_num: 30
   near: 5
   far: 150
+  source: {fileID: 1909415152}
+  spread: {x: 20, y: 300, z: 20}
   level: {fileID: 852792066095036995, guid: 83d4a98dc1357424d833b8a7c6b2b52b, type: 3}
-  visible: 1
+  visibleInHierarchy: 0
   particle: {fileID: 829214448227663622, guid: d3b2d14bc30e0c04b93fd10259d04b5c, type: 3}
   computeOrder: {fileID: 7200000, guid: 6cf891b594722814bb8f530314e93486, type: 3}
 --- !u!4 &1607541083

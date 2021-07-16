@@ -30,7 +30,7 @@ Shader "SimChop/InterleaveSystem"
 		uniform float4x4 pos_octant_map; // note: this shifts unit cube to first octant in 3d-space
 		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
 		uniform float3 tex_dimensions; // for the textures
-		uniform uint precision;
+		uniform float precision;
 		uniform float editor_radius;
 		uniform int scan_num;
 		uniform float editor_alpha;
@@ -46,7 +46,6 @@ Shader "SimChop/InterleaveSystem"
 				10 :
 				digits;
 			
-			float3 scale = vol_dimensions;
 			float3 worldPremap = 
 				mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz;
 			float3 unitPos = 
@@ -70,6 +69,7 @@ Shader "SimChop/InterleaveSystem"
 					pos_index(num_inside_vol-1, tex_dimensions)
 				);
 			
+			float scale = pow(2, floor(precision)) * (1 + frac(precision));
 			
 			uint2 interleaved = 
 				getInterleaved(
@@ -77,7 +77,8 @@ Shader "SimChop/InterleaveSystem"
 					float3(0, 0, 0), 
 					first_digits, 
 					digits, 
-					precision
+					precision,
+					scale
 				);
 			// cull vertices beyond volume where particles are located
 			// if (
@@ -102,7 +103,7 @@ Shader "SimChop/InterleaveSystem"
 					d, 
 					closest, 
 					float3(0, 0, 0), 
-					scale, 
+					vol_dimensions, 
 					scan_num,
 					coord_tex, 
 					tex_dimensions, 
@@ -120,7 +121,8 @@ Shader "SimChop/InterleaveSystem"
 						float3(x, y, z), 
 						first_digits, 
 						digits, 
-						precision
+						precision,
+						scale
 					);
 				locIndex = 
 					binarySearch(
@@ -136,7 +138,7 @@ Shader "SimChop/InterleaveSystem"
 						d, 
 						closest, 
 						float3(x, y, z), 
-						scale, 
+						vol_dimensions, 
 						scan_num,
 						coord_shifted_half_unit_tex, 
 						tex_dimensions, 

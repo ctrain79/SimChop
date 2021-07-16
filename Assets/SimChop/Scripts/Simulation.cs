@@ -5,10 +5,13 @@ using Unity.Jobs;
 using UnityEngine;
 using Unity.Collections;
 
+// TO DO: put interleaving in Jobs
+
 public class Simulation : MonoBehaviour
 {
 	private const int MAX_PARTICLES = 4096;
 	
+	// TO DO: group together into [Serializable] struct so fields are collapsible
 	[Header("Hot Swappable")]
 	
 	[SerializeField, Range(0, MAX_PARTICLES-1)]
@@ -20,14 +23,16 @@ public class Simulation : MonoBehaviour
 	public float editor_emission = default;
 	[SerializeField, Range(0.5f, 10)]
 	public float editor_radius = 4;
-	[SerializeField, Range(1, 20)]
+	[SerializeField, Range(1, 30)]
 	public int scan_num = default;
 	[SerializeField]
 	public float near = default; // camera near-plane distance
 	[SerializeField]
 	public float far = default; // camera far-plane distance
 	
+	// TO DO: group together into [Serializable] struct so fields are collapsible
 	[Header("Not Hot Swappable")]
+	
 	[SerializeField]
 	public GameObject source = default;
 	[SerializeField]
@@ -40,33 +45,33 @@ public class Simulation : MonoBehaviour
 	// set to public if you want to keep track of it in the editor (but you obviously cannot edit the number)
 	int num_inside_vol;
 	
-	int precision;
+	float precision;
 	float width;
 	float height;
 	float depth;
 	float camH;
 	float camW;
+	float scale;
+	
+	Camera cam;
 	
 	void setPrecisionAndDimensions() {
-		camH = Mathf.Tan(Camera.main.fieldOfView*Mathf.PI/360);
-		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(Camera.main.fieldOfView, Camera.main.aspect)*Mathf.PI/360);
-		
-		// float k = Mathf.Ceil(Mathf.Log(2 * camW * far, 2));
-		// width = Mathf.Pow(2, k); // so the volume covers the furthest part of camera view
-		//width = 2 * camW * far;
-		
-		// k = Mathf.Ceil(Mathf.Log(2 * camH * far, 2));
-		// height = Mathf.Pow(2, k); // so the volume covers the furthest part of camera view
-		// height = 2 * camH * far;
+		cam = Camera.main; // cache it
+		camH = Mathf.Tan(cam.fieldOfView*Mathf.PI/360);
+		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(cam.fieldOfView, cam.aspect)*Mathf.PI/360);
+		width = 2 * camW * far;
+		height = 2 * camH * far;
 		depth = far - near;
 		
-		precision = 4;
-		float sidelength = Mathf.Pow(2, precision)*1.6f*(editor_radius+1);
-		width = height = sidelength;
-		//precision = (int)Mathf.Floor(Mathf.Log(sidelength/(editor_radius+1), 2)) - 1;
+		float max = Mathf.Max(width, height, depth);
+		float sidelength = 2*max;
+		precision = Mathf.Log(max/(editor_radius+1), 2) - 1;
+		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 + precision - Mathf.Floor(precision));
+		
 		Debug.Log("precision = " + precision);
 		Debug.Log("sidelength = " + sidelength);
 		Debug.Log("cell size = " + sidelength*Mathf.Pow(0.5f, precision));
+		Debug.Log("scale = " + scale);
 		Debug.Log("editor radius = " + editor_radius);
 	}
 	
@@ -93,6 +98,7 @@ public class Simulation : MonoBehaviour
 	NativeArray<ulong> interleaved;
 	
 	NativeArray<Vector3> positionsArray;
+	NativeArray<Vector3> cameraPositionsArray;
 	NativeArray<Vector3> transformedPositionsArray;
 	NativeArray<int> left;
 	NativeArray<int> right;
@@ -135,7 +141,7 @@ public class Simulation : MonoBehaviour
 				level,
 				new Vector3(0, 0, 0),
 				Quaternion.identity,
-				Camera.main.transform
+				cam.transform
 			);
 			levels[i].transform.localScale =
 				new Vector3(
@@ -173,8 +179,8 @@ public class Simulation : MonoBehaviour
 		simObjs = new Stack<GameObject>();
 		volumeCollider = gameObject.GetComponent<BoxCollider>();
 		volumeCollider.center = 
-			Camera.main.transform.position + 
-			Camera.main.transform.forward * (depth/2 + near);
+			cam.transform.position + 
+			cam.transform.forward * (depth/2 + near);
 		volumeCollider.size = new Vector3(width/2, height/2, depth/2);
 		
 		particleData = new ParticleData(
@@ -182,7 +188,7 @@ public class Simulation : MonoBehaviour
 			spawnCount,
 			simObjs,
 			particle,
-			Camera.main.transform.position,
+			cam.transform.position,
 			new Vector3(width, height, depth),
 			near,
 			source,
@@ -193,10 +199,11 @@ public class Simulation : MonoBehaviour
 		
 		InitializationEvent();
 		
-		transformedPositionsBuffer = new ComputeBuffer(particleData.MAX_PARTICLES, stride);
+		//transformedPositionsBuffer = new ComputeBuffer(particleData.MAX_PARTICLES, stride);
 		
 		// setup particle data for jobs
 		positionsArray = new NativeArray<Vector3>(MAX_PARTICLES, Allocator.Persistent);
+		cameraPositionsArray = new NativeArray<Vector3>(MAX_PARTICLES, Allocator.Persistent);
 		transformedPositionsArray = new NativeArray<Vector3>(MAX_PARTICLES, Allocator.Persistent);
 		left = new NativeArray<int>(MAX_PARTICLES, Allocator.Persistent);
 		right = new NativeArray<int>(MAX_PARTICLES, Allocator.Persistent);
@@ -212,6 +219,7 @@ public class Simulation : MonoBehaviour
 	
 	void OnDestroy(){
 		positionsArray.Dispose();
+		cameraPositionsArray.Dispose();
 		transformedPositionsArray.Dispose();
 		left.Dispose();
 		right.Dispose();
@@ -243,8 +251,6 @@ public class Simulation : MonoBehaviour
 	
 	void OnDisable()
 	{
-		transformedPositionsBuffer.Release();
-		transformedPositionsBuffer = null;
 		TakeDown();
 	}
 	
@@ -278,8 +284,8 @@ public class Simulation : MonoBehaviour
 			
 			MapVolume mapJob = new MapVolume()
 			{
-				map_unit = unitMap,
-				map_shift = posOctantMap,
+				mapUnit = unitMap,
+				mapShift = posOctantMap,
 				pos = positionsArray,
 				mapped = transformedPositionsArray
 			};
@@ -329,41 +335,46 @@ public class Simulation : MonoBehaviour
 			
 		}
 	}
-
+	
+	
+	
 	void interleave(
 		Vector3 offset
 	) {
 		num_inside_vol = 0;
-		ulong result = 0x00000000;
-		float unit = Mathf.Pow(0.5f, precision);
-		float two = Mathf.Pow(2, precision);
-		for(int i = 0; i < spawnCount; i++) {
-			if (
-				transformedPositionsArray[i].x <= 1-unit && 
-				transformedPositionsArray[i].y <= 1-unit && 
-				transformedPositionsArray[i].z <= 1-unit && 
-				transformedPositionsArray[i].x >= unit && 
-				transformedPositionsArray[i].y >= unit && 
-				transformedPositionsArray[i].z >= unit
-			) {
-				result = 0;
-				uint s1 = (uint)(Mathf.Floor((transformedPositionsArray[i].x + offset.x)*two));
-				uint s2 = (uint)(Mathf.Floor((transformedPositionsArray[i].y + offset.y)*two));
-				uint s3 = (uint)(Mathf.Floor((transformedPositionsArray[i].z + offset.z)*two));
-				for(int k = 0; k < precision; k++){
-					uint mask = (0x1);
-					result |= (ulong)(mask & s3) << (k*3);
-					result |= (ulong)(mask & s2) << (k*3+1);
-					result |= (ulong)(mask & s1) << (k*3+2);
-					s1 = s1 >> 1;
-					s2 = s2 >> 1;
-					s3 = s3 >> 1;
-				}
-				resArray[num_inside_vol] = transformedPositionsArray[i];
-				interleaved[num_inside_vol] = result;
-				num_inside_vol++;
-			}
-		}
+		NativeArray<Matrix4x4> camMap = new NativeArray<Matrix4x4>(1, Allocator.TempJob);
+		camMap[0] = 
+			Matrix4x4.Rotate(cam.transform.rotation).inverse * 
+			Matrix4x4.Translate(-1*cam.transform.position);
+		NativeArray<Vector3> jobOffset = new NativeArray<Vector3>(1, Allocator.TempJob);
+		jobOffset[0] = offset;
+		NativeArray<int> jobNumInVol = new NativeArray<int>(1, Allocator.TempJob);
+		
+		MapToCam mapJob = new MapToCam()
+		{
+			camW = camW,
+			camH = camH,
+			near = near,
+			far = far,
+			editor_radius = editor_radius,
+			full_precision = (int)Mathf.Ceil(precision),
+			scale = scale,
+			num_inside_vol = jobNumInVol,
+			camMap = camMap,
+			offset = jobOffset,
+			pos = positionsArray,
+			transformed = transformedPositionsArray,
+			resArray = resArray,
+			interleaved = interleaved
+		};
+		mapJob.Run(spawnCount);
+		
+		num_inside_vol = jobNumInVol[0];
+		Debug.Log("num_inside_vol = " + num_inside_vol);
+		
+		camMap.Dispose();
+		jobOffset.Dispose();
+		jobNumInVol.Dispose();
 	}
 	
 	private void buildInterleaveShaderData(
@@ -398,7 +409,7 @@ public class Simulation : MonoBehaviour
 		
 		Shader.SetGlobalVector("tex_dimensions", tex_dimensions);
 		Shader.SetGlobalVector("vol_dimensions", new Vector3(width, height, depth));
-		Shader.SetGlobalInt("precision", precision);
+		Shader.SetGlobalFloat("precision", precision);
 		Shader.SetGlobalInt("num_inside_vol", num_inside_vol);
 		
 		setupInterleavingTextures(
