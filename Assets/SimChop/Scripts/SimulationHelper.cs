@@ -72,7 +72,7 @@ public class SimulationHelper
   		);
     }
     
-    public static Matrix4x4 createMatrixMapToPosOctant(int precision) {
+    public static Matrix4x4 createMatrixMapToPosOctant() {
       return
         Matrix4x4.Translate(new Vector3(0.5f, 0.5f, 0));
     }

@@ -4,13 +4,13 @@ using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
 
-public struct MapVolume : IJobFor
+public struct MapVolume : IJobParallelFor
 {
 	[ReadOnly]
-	public Matrix4x4 map_unit;
+	public Matrix4x4 mapUnit;
 	
 	[ReadOnly]
-	public Matrix4x4 map_shift; // to first octant
+	public Matrix4x4 mapShift; // to first octant
 	
 	public NativeArray<Vector3> pos;
 	public NativeArray<Vector3> mapped;
@@ -18,7 +18,7 @@ public struct MapVolume : IJobFor
 	public void Execute(int i)
 	{
 		mapped[i] = 
-			map_unit * 
+			mapUnit * 
 				(new Vector4(
 					pos[i].x,
 					pos[i].y,
@@ -27,7 +27,7 @@ public struct MapVolume : IJobFor
 				));
 			
 		mapped[i] = 
-			map_shift * 
+			mapShift * 
 				(new Vector4(
 					mapped[i].x,
 					mapped[i].y,

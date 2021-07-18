@@ -2,19 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// PROJECT SETTINGS: set the execution order for Particles Manager BEFORE NewSimulation
+// PROJECT SETTINGS: set the execution order for Particles Manager BEFORE Simulation
 public class ParticlesManager : MonoBehaviour
 {
 	ParticleData data;
 	GameObject[] pool;
 	bool updating = false;
 	
-	// Project Settings: order called before NewSimulation (because NewSimulation reference is static)
+	// Project Settings: order called before Simulation (because Simulation reference is static)
     void OnEnable()
     {
-        NewSimulation.EnableEvent += SetData;
-        NewSimulation.InitializationEvent += InitializePool;
-        NewSimulation.NumberOfParticlesChangedEvent += ActivateParticles;
+        Simulation.EnableEvent += SetData;
+        Simulation.InitializationEvent += InitializePool;
+        Simulation.NumberOfParticlesChangedEvent += ActivateParticles;
     }
     
 	public void SetData(
