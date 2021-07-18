@@ -65,7 +65,7 @@ uint binarySearch(
 	fixed4 col = fixed4(0, 0, 0, 1);
 	for (uint f = 0; f < iterations; f++){
 		if (stop < 1) {
-			m = (low + high-1)/2.0;
+			m = (low + high)/2.0;
 			col = tex3Dlod(tex, pos_index(m, dim)); // some r, g, b, a, with g and a each with 16-bits, r and b with 14
 			if (compare(bits, col) > 0){
 				low = m+1;
@@ -134,7 +134,7 @@ float4 lookup(
 	float3 dim, 
 	int num_inside_vol
 ) {
-	for(int j = -scan_num; j < scan_num; j++){
+	for(int j = -10; j < scan_num + 30; j++){
 			
 		fixed4 p = tex3Dlod(tex, posCoord_index(i+j, dim, num_inside_vol));
 		float distance = length((w_pos.xyz - float3(p.rgb))*scale);

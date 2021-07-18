@@ -24,26 +24,26 @@ public class Simulation : MonoBehaviour
 	public float rolloff = default;
 	[SerializeField, Range(0, 3)]
 	public float emission = default;
-	[SerializeField, Range(0.5f, 10)]
+	private const float MAX_RADIUS = 10;
+	[SerializeField, Range(0.5f, MAX_RADIUS)]
 	public float radius = 4;
 	[SerializeField, Range(1, 30)]
 	public int scanNumber = default;
-	[SerializeField]
-	public float near = default; // camera near-plane distance
-	[SerializeField]
-	public float far = default; // camera far-plane distance
 	
 	// TO DO: group together into [Serializable] struct so fields are collapsible
 	[Header("Not Hot Swappable")]
 	
 	[SerializeField]
+	public float near = default; // camera near-plane distance
+	[SerializeField]
+	public float far = default; // camera far-plane distance
+	[SerializeField]
 	public GameObject source = default;
 	[SerializeField]
 	public Vector3 spread = default;
-	[SerializeField]
-	GameObject level = default;
 	public int numOfLevels = 30;
 	public bool levelsVisibleInHierarchy = true;
+	public float vertexDelta = default; // level surface geometry controls
 	public GameObject particle;
 	public bool particlesVisibleInHierarchy = true;
 	[SerializeField]
@@ -73,6 +73,18 @@ public class Simulation : MonoBehaviour
 		width = 2.05f * camW * far;
 		height = 2.05f * camH * far;
 		depth = far - near;
+		span = (depth-radius) / numOfLevels;
+		
+		CameraData camData = new CameraData(
+			new Vector3(width, height, depth),
+			near,
+			far,
+			numOfLevels,
+			vertexDelta,
+			span,
+			MAX_RADIUS
+		);
+		SetFrustumEvent(camData);
 		
 		float max = Mathf.Max(width, height, depth);
 		precision = Mathf.Log(max/(radius+1), 2) - 1; // instead of taking the floor, we can scale interleaving larger than displayed volume
@@ -85,13 +97,14 @@ public class Simulation : MonoBehaviour
 	Stack<GameObject> simObjs;
 	BoxCollider volumeCollider;
 	
+	public static event Action<CameraData> SetFrustumEvent;
+	
 	public static event Action<ParticleData> EnableEvent;
 	public static event Action InitializationEvent;
 	public static event Action<int> NumberOfParticlesChangedEvent;
 	
 	
 	float span;
-	GameObject[] levels;
 	
 	Matrix4x4 unitScale; // performs transformation to unit cube
 	Vector3 shift; // amount of translation for second interleaving data structure
@@ -138,30 +151,31 @@ public class Simulation : MonoBehaviour
 	{
 		//Debug.Log("NewSimulation Start");
 		playing = true;
-		span = (depth-radius) / numOfLevels;
-		levels = new GameObject[numOfLevels];
+		//levels = new GameObject[numOfLevels];
 		for (int i = 0; i < numOfLevels; i++) {
-			levels[i] = Instantiate(
-				level,
-				new Vector3(0, 0, 0),
-				Quaternion.identity,
-				cam.transform
-			);
-			levels[i].transform.localScale =
-				new Vector3(
-					width,
-					height,
-					1
-				);
-			levels[i].transform.localRotation = Quaternion.identity;
-			levels[i].transform.localPosition = new Vector3(0, 0, near + span*i + radius*0.5f);
+			// Back when we instantiated level surfaces instead of generating their geometry
+			
+			// levels[i] = Instantiate(
+			// 	level,
+			// 	new Vector3(0, 0, 0),
+			// 	Quaternion.identity,
+			// 	cam.transform
+			// );
+			// levels[i].transform.localScale =
+			// 	new Vector3(
+			// 		width,
+			// 		height,
+			// 		1
+			// 	);
+			// levels[i].transform.localRotation = Quaternion.identity;
+			// levels[i].transform.localPosition = new Vector3(0, 0, near + span*i + radius*0.5f);
 			
 			// so other people's save states will not save *thousands* of our levels and particles (see ParticleManager.InitializePool)
-			HideFlags inHierarchy = 
-				levelsVisibleInHierarchy ? 
-				HideFlags.None : 
-				HideFlags.HideInHierarchy;
-			levels[i].hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | inHierarchy;
+			// HideFlags inHierarchy = 
+			// 	levelsVisibleInHierarchy ? 
+			// 	HideFlags.None : 
+			// 	HideFlags.HideInHierarchy;
+			// levels[i].hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | inHierarchy;
 			
 		}
 		
@@ -294,9 +308,11 @@ public class Simulation : MonoBehaviour
 			Shader.SetGlobalMatrix("unit_map", unitMap);
 			Shader.SetGlobalFloat("editor_alpha", alpha);
 			Shader.SetGlobalFloat("editor_emission", emission);
-			Shader.SetGlobalFloat("precision", precision);
 			Shader.SetGlobalFloat("editor_radius", radius);
 			Shader.SetGlobalFloat("editor_rolloff", rolloff);
+			Shader.SetGlobalFloat("editor_vertex_delta", vertexDelta);
+			Shader.SetGlobalFloat("span", span);
+			Shader.SetGlobalFloat("precision", precision);
 			Shader.SetGlobalInt("scan_num", scanNumber);
 			
 			// computeOrder.SetMatrix(orderMatrixUnitShiftId, posOctantMap);
@@ -346,7 +362,7 @@ public class Simulation : MonoBehaviour
 			near = near,
 			far = far,
 			radius = radius,
-			mortonBitNum = (int)Mathf.Ceil(precision),
+			mortonBitNum = Mathf.CeilToInt(precision),
 			scale = scale,
 			numInsideFrustum = jobNumInVol,
 			camMap = camMap,
