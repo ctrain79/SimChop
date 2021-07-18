@@ -70,8 +70,8 @@ public class Simulation : MonoBehaviour
 		cam = Camera.main;
 		camH = Mathf.Tan(cam.fieldOfView*Mathf.PI/360);
 		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(cam.fieldOfView, cam.aspect)*Mathf.PI/360);
-		width = 2 * camW * far;
-		height = 2 * camH * far;
+		width = 2.05f * camW * far;
+		height = 2.05f * camH * far;
 		depth = far - near;
 		
 		float max = Mathf.Max(width, height, depth);
@@ -97,8 +97,6 @@ public class Simulation : MonoBehaviour
 	Vector3 shift; // amount of translation for second interleaving data structure
 	
 	// jobs version
-	List<Vector3> restrictedPos = new List<Vector3>();
-	List<int> restrictedObj = new List<int>();
 	NativeArray<Vector3> frustumArray;
 	NativeArray<ulong> interleaved;
 	
@@ -299,7 +297,7 @@ public class Simulation : MonoBehaviour
 			Shader.SetGlobalFloat("precision", precision);
 			Shader.SetGlobalFloat("editor_radius", radius);
 			Shader.SetGlobalFloat("editor_rolloff", rolloff);
-			Shader.SetGlobalInt("scanNumber", scanNumber);
+			Shader.SetGlobalInt("scan_num", scanNumber);
 			
 			// computeOrder.SetMatrix(orderMatrixUnitShiftId, posOctantMap);
 			// computeOrder.SetMatrix(orderMatrixToUnitId, unitMap);
@@ -389,7 +387,6 @@ public class Simulation : MonoBehaviour
 		
 		Shader.SetGlobalVector("tex_dimensions", tex_dimensions);
 		Shader.SetGlobalVector("vol_dimensions", new Vector3(width, height, depth));
-		Shader.SetGlobalFloat("precision", precision);
 		Shader.SetGlobalInt("num_inside_vol", numInsideFrustum); // maybe want different culling depending on use
 		
 		setupInterleavingTextures(
@@ -499,14 +496,5 @@ public class Simulation : MonoBehaviour
 	void Update()
 	{
 		updatePositions();
-	}
-
-	public void LateUpdate()
-	{	
-		// TO DO: keep track of how many are in the collection instead of freeing memory with TrimExcess
-		restrictedPos.Clear();
-		restrictedPos.TrimExcess();
-		restrictedObj.Clear();
-		restrictedObj.TrimExcess();
 	}
 }

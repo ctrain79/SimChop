@@ -1102,20 +1102,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnCount: 1827
-  alpha: 0.165
+  alpha: 0.074
   rolloff: 0.478
   emission: 0.37
-  radius: 6.93
-  scanNumber: 16
+  radius: 10
+  scanNumber: 20
   near: 0.3
   far: 100
   source: {fileID: 1909415152}
   spread: {x: 20, y: 300, z: 20}
   level: {fileID: 852792066095036995, guid: 83d4a98dc1357424d833b8a7c6b2b52b, type: 3}
   numOfLevels: 30
-  levelsVisibleInHierarchy: 0
+  levelsVisibleInHierarchy: 1
   particle: {fileID: 829214448227663622, guid: d3b2d14bc30e0c04b93fd10259d04b5c, type: 3}
-  particlesVisibleInHierarchy: 0
+  particlesVisibleInHierarchy: 1
   displayParticleSceneViewGizmos: 0
   computeOrder: {fileID: 7200000, guid: 6cf891b594722814bb8f530314e93486, type: 3}
 --- !u!4 &1607541083

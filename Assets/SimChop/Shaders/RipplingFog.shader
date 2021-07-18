@@ -26,18 +26,21 @@ Shader "SimChop/RipplingFog"
 		uniform sampler3D coord_tex;
 		uniform sampler3D interleaved_shifted_half_unit_tex;
 		uniform sampler3D coord_shifted_half_unit_tex;
-		uniform int num_inside_vol;
 
-		uniform float4x4 unit_map;
 		uniform float4x4 pos_octant_map; // note: this shifts unit cube to first octant in 3d-space
-		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
-		uniform float3 tex_dimensions; // for the textures
-		uniform float precision;
-		uniform float editor_radius;
-		uniform float editor_rolloff;
-		uniform int scan_num;
+		uniform float4x4 unit_map;
+		
+		// controls
 		uniform float editor_alpha;
 		uniform float editor_emission;
+		uniform float editor_radius;
+		uniform float editor_rolloff;
+		uniform float precision;
+		uniform int scan_num;
+		
+		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
+		uniform float3 tex_dimensions; // for the textures
+		uniform int num_inside_vol;
 			
 		float wave(float3 p, float w, float x, float y, float z)
 		{
@@ -190,6 +193,7 @@ Shader "SimChop/RipplingFog"
 		void surf(Input IN, inout SurfaceOutput o)
 		{
 			if (IN.customColor.a < 0) discard;
+			
 			o.Albedo = IN.customColor.rgb;
 			o.Alpha = smoothstep(editor_radius, editor_radius*editor_rolloff, IN.dist) * editor_alpha;
 			o.Emission = 
