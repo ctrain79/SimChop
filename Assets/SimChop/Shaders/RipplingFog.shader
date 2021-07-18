@@ -16,7 +16,7 @@ Shader "SimChop/RipplingFog"
 		struct Input {
 			//float2 uv_MainTex; // if needed, create Properties { _MainTex ("Texture", 2D) = "white" {} }
 			float3 worldPos;
-			nointerpolation float4 customColor;
+			float4 customColor;
 			float4 screenPos;
 			float dist;
 			float emit;
@@ -35,6 +35,8 @@ Shader "SimChop/RipplingFog"
 		uniform float editor_emission;
 		uniform float editor_radius;
 		uniform float editor_rolloff;
+		uniform float editor_vertex_delta;
+		uniform float span;
 		uniform float precision;
 		uniform int scan_num;
 		
@@ -163,21 +165,22 @@ Shader "SimChop/RipplingFog"
 			
 			if (d >= editor_radius + 1){
 				// usual trick of setting w to NaN is ignored by Unity with vertex/surface combo; so do x instead
-				v.vertex.x = 0.0/0.0;
+				//v.vertex.x = 0.0/0.0;
 			} else {
 				o.dist = d;
 			}
 			
 			// get rid of emission ripple and vertex waving if you just want regular round particles
 			float ripple = wave3(w_pos);
-			v.vertex.x += 0.01*ripple;
-			v.vertex.y += 0.01*ripple;
-			v.vertex.z += ripple;
+			// v.vertex.x += 0.5*editor_vertex_delta*ripple;
+			// v.vertex.y += 0.5*editor_vertex_delta*ripple;
+			//v.vertex.z += span*0.2*ripple;
 			
 			o.worldPos = worldPremap;
 			float lightness =
 				saturate(
 					sin((1+sin(3*_Time.x))*0.2*worldPremap.x) + 
+					sin((1+sin(3*_Time.x))*0.2*worldPremap.y) + 
 					sin((1+sin(3*_Time.x))*0.2*worldPremap.z)
 				);
 			o.customColor = 

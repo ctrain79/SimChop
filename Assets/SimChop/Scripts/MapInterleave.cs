@@ -41,7 +41,7 @@ public struct MapInterleave : IJobFor
 			p.z <= far + 2*radius && 
 			p.x >= -camW * p.z - 2*radius && 
 			p.y >= -camH * p.z - 2*radius && 
-			p.z >= near - 2*radius
+			p.z >= -radius
 		) {
 			ulong result = 0x00000000;
 			uint x = (uint)(Mathf.Floor((transformed[i].x + offset[0].x)*scale));
