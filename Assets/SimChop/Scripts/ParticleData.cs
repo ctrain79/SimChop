@@ -10,6 +10,7 @@ public struct ParticleData
 		int n,
 		Stack<GameObject> active,
 		GameObject particle,
+		bool particlesVisibleInHierarchy,
 		Vector3 camera_pos, 
 		Vector3 volume,
 		float near,
@@ -23,6 +24,7 @@ public struct ParticleData
 		this.n = n;
 		this.active = active;
 		this.particle = particle;
+		this.particlesVisibleInHierarchy = particlesVisibleInHierarchy;
 		this.camera_pos = camera_pos;
 		this.volume = volume;
 		this.near = near;
@@ -66,6 +68,14 @@ public struct ParticleData
 			return particle; 
 		}
 		set { particle = value; }
+	}
+	
+	private bool particlesVisibleInHierarchy;
+	public bool ParticlesVisibleInHierarchy {
+		get {
+			return particlesVisibleInHierarchy;
+		}
+		set { particlesVisibleInHierarchy = value; }
 	}
 	
 	private Vector3 camera_pos;

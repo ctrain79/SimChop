@@ -1,4 +1,4 @@
-Shader "SimChop/InterleaveSystem"
+Shader "SimChop/RipplingFog"
 {
 	SubShader
 	{
@@ -18,28 +18,48 @@ Shader "SimChop/InterleaveSystem"
 			float3 worldPos;
 			nointerpolation float4 customColor;
 			float4 screenPos;
+			float dist;
+			float emit;
 		};
 		
 		uniform sampler3D interleaved_tex;
 		uniform sampler3D coord_tex;
 		uniform sampler3D interleaved_shifted_half_unit_tex;
 		uniform sampler3D coord_shifted_half_unit_tex;
-		uniform int num_inside_vol;
 
-		uniform float4x4 unit_map;
 		uniform float4x4 pos_octant_map; // note: this shifts unit cube to first octant in 3d-space
-		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
-		uniform float3 tex_dimensions; // for the textures
-		uniform float precision;
-		uniform float editor_radius;
-		uniform int scan_num;
+		uniform float4x4 unit_map;
+		
+		// controls
 		uniform float editor_alpha;
 		uniform float editor_emission;
+		uniform float editor_radius;
+		uniform float editor_rolloff;
+		uniform float precision;
+		uniform int scan_num;
+		
+		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
+		uniform float3 tex_dimensions; // for the textures
+		uniform int num_inside_vol;
+			
+		float wave(float3 p, float w, float x, float y, float z)
+		{
+			return w*(sin(_Time.y + x*p.x + z*p.z) + sin(_Time.y + y*p.y - z*p.z));
+		}
+
+		float wave3(float3 p)
+		{
+			return 
+				wave(p, 0.3, 64, 64, 64) +
+				wave(p, 0.3, 16, 16, 16) +
+				wave(p, 0.3, 32, 32, 32);
+		}
 		
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
 			uint digits = 3*precision;
+			
 			
 			uint first_digits = 
 				(digits > 10) ?
@@ -80,13 +100,6 @@ Shader "SimChop/InterleaveSystem"
 					precision,
 					scale
 				);
-			// cull vertices beyond volume where particles are located
-			// if (
-			// 	compare(interleaved, first) < 0 || 
-			// 	compare(interleaved, last) > 0
-			// ) {
-			// 	v.vertex.x = 0.0/0.0;
-			// }
 			
 			// check shifted neighbouring octants
 			uint locIndex = 
@@ -149,28 +162,46 @@ Shader "SimChop/InterleaveSystem"
 			}}}
 			
 			if (d >= editor_radius + 1){
-				v.vertex.x = 0.0/0.0; // usual trick of setting w to NaN is ignored by Unity with vertex/surface combo
+				// usual trick of setting w to NaN is ignored by Unity with vertex/surface combo; so do x instead
+				v.vertex.x = 0.0/0.0;
+			} else {
+				o.dist = d;
 			}
 			
+			// get rid of emission ripple and vertex waving if you just want regular round particles
+			float ripple = wave3(w_pos);
+			v.vertex.x += 0.01*ripple;
+			v.vertex.y += 0.01*ripple;
+			v.vertex.z += ripple;
+			
 			o.worldPos = worldPremap;
+			float lightness =
+				saturate(
+					sin((1+sin(3*_Time.x))*0.2*worldPremap.x) + 
+					sin((1+sin(3*_Time.x))*0.2*worldPremap.z)
+				);
 			o.customColor = 
 				float4(
-					w_pos, 
+					0.1*lightness,
+					0.4*lightness,
+					lightness,
 					(editor_radius - d)/editor_radius
 				);
+			o.emit = ripple;
 		}
 		
 		void surf(Input IN, inout SurfaceOutput o)
 		{
 			if (IN.customColor.a < 0) discard;
+			
 			o.Albedo = IN.customColor.rgb;
-			o.Alpha = IN.customColor.a * editor_alpha;
+			o.Alpha = smoothstep(editor_radius, editor_radius*editor_rolloff, IN.dist) * editor_alpha;
 			o.Emission = 
 				fixed3(
 					editor_emission,
 					editor_emission,
 					editor_emission
-				);
+				) + IN.emit;
 		}
 		
 		ENDCG

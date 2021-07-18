@@ -6,8 +6,8 @@ float4 pos_index(
 	float3 dim
 ) {
 	return float4(
-		(uint(index) % dim.x) / dim.x,
-		(uint(index) / dim.x) / dim.y,
+		(uint(index) % dim.x + 0.5) / dim.x,
+		(uint(index) / dim.x + 0.5) / dim.y,
 		0,
 		0
 	);
@@ -22,8 +22,8 @@ float4 posCoord_index(
 	else if (index >= num_inside_vol) 
 		index = num_inside_vol - 1;
 	return float4(
-		(uint(index) % dim.x) / dim.x,
-		(uint(index) / dim.x) / dim.y,
+		(uint(index) % dim.x + 0.5) / dim.x,
+		(uint(index) / dim.x + 0.5) / dim.y,
 		0,
 		0
 	);
