@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 // PROJECT SETTINGS: set the execution order for Particles Manager BEFORE Simulation
@@ -21,15 +19,12 @@ public class ParticlesManager : MonoBehaviour
 		ParticleData particleData
 	) {
 		data = particleData;
-		//Debug.Log("Particle manager setData: p = " + data.Particle.ToString());
 		pool = new GameObject[data.MAX_PARTICLES]; 
 		Vector3 pos = data.Camera_pos;
 	}
 	
 	public void InitializePool()
 	{
-		//Debug.Log("data.N = " + data.N);
-		//Debug.Log("initialize pool: p = " + data.Particle.ToString());
 		for (int i = 0; i < data.MAX_PARTICLES; i++) {
 			Vector3 pos = data.Camera_pos;
 			if (i < data.N) {
@@ -62,6 +57,11 @@ public class ParticlesManager : MonoBehaviour
 				pool[i].GetComponent<Rigidbody>().useGravity = false;
 				pool[i].SetActive(false);
 			}
+			HideFlags inHierarchy = 
+				data.ParticlesVisibleInHierarchy ? 
+				HideFlags.None : 
+				HideFlags.HideInHierarchy;
+			pool[i].hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | inHierarchy;
 		}
 	}
 	
@@ -100,7 +100,7 @@ public class ParticlesManager : MonoBehaviour
 				data.Active.TrimExcess();
 				data.N = n;
 			}
-			else if (data.N == n) {
+			else if (data.N == n) { // LEAVE THIS EMPTY CASE
 				//Debug.Log("Nothing changed");
 			}
 			else
