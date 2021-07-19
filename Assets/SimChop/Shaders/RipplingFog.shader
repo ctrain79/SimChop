@@ -2,8 +2,9 @@ Shader "SimChop/RipplingFog"
 {
 	SubShader
 	{
-		Blend SrcAlpha OneMinusSrcAlpha
 		Tags { "Queue"="Transparent" "RenderType"="Transparent" }
+		Blend SrcAlpha OneMinusSrcAlpha
+		
 		
 		CGPROGRAM
 		#pragma editor_sync_compilation
@@ -60,7 +61,7 @@ Shader "SimChop/RipplingFog"
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
-			uint digits = 3*precision;
+			uint digits = 3*floor(precision);
 			
 			
 			uint first_digits = 
@@ -91,7 +92,7 @@ Shader "SimChop/RipplingFog"
 					pos_index(num_inside_vol-1, tex_dimensions)
 				);
 			
-			float scale = pow(2, floor(precision)) * (1 + frac(precision));
+			float scale = pow(2, floor(precision)) * (1 - 0.5*frac(precision));
 			
 			uint2 interleaved = 
 				getInterleaved(
@@ -165,16 +166,16 @@ Shader "SimChop/RipplingFog"
 			
 			if (d >= editor_radius + 1){
 				// usual trick of setting w to NaN is ignored by Unity with vertex/surface combo; so do x instead
-				//v.vertex.x = 0.0/0.0;
+				v.vertex.x = 0.0/0.0;
 			} else {
 				o.dist = d;
 			}
 			
 			// get rid of emission ripple and vertex waving if you just want regular round particles
 			float ripple = wave3(w_pos);
-			// v.vertex.x += 0.5*editor_vertex_delta*ripple;
-			// v.vertex.y += 0.5*editor_vertex_delta*ripple;
-			//v.vertex.z += span*0.2*ripple;
+			v.vertex.x += 0.5*editor_vertex_delta*ripple;
+			v.vertex.y += 0.5*editor_vertex_delta*ripple;
+			v.vertex.z += span*0.2*ripple;
 			
 			o.worldPos = worldPremap;
 			float lightness =

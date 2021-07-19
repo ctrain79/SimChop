@@ -58,7 +58,7 @@ public class MeshGenerator : MonoBehaviour
 		float dy = data.VertexDelta;
 		int v_count = 0;
 		int i_count = 0;
-		for (int z = 0; z < data.NumOfLevels; z++)
+		for (int z = data.NumOfLevels-1; z >= 0; z--)
 		{
 			float depth = 0.5f*data.Radius + data.Near + z*data.Span;
 			float w = 2.3f * camW * depth;
