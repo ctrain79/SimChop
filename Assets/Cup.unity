@@ -244,7 +244,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1831d6db4135bbb4299df1d7b83f2e66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnCount: 1827
+  spawnCount: 2048
   alpha: 0.074
   rolloff: 0.931
   emission: 0.37

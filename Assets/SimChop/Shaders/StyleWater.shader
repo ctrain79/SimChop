@@ -160,7 +160,7 @@ Shader "Unlit/StyleWater"
 				v.vertex.x = 0.0/0.0; // usual trick of setting w to NaN is ignored by Unity with vertex/surface combo
 			}
 			else{
-				v.vertex.z -= smoothstep(4,3.6,d)*2.;
+				v.vertex.z -= smoothstep(10,9.6,d)*2.;
 				o.dist = d;
 			}
 
@@ -177,12 +177,12 @@ Shader "Unlit/StyleWater"
 		{
 			float d = IN.dist;
 			//d *= sin(IN.worldPos.y)+2;
-			o.Alpha = smoothstep(4,3.9,d);
-			o.Albedo =float3(0,.6,1.)*smoothstep(4,3,d);
-			o.Albedo = max(float3(1,1,1)*smoothstep(3,4,d),o.Albedo)*.5;
+			o.Alpha = smoothstep(10,9.9,d);
+			o.Albedo =float3(0,.6,1.)*smoothstep(10,9,d);
+			o.Albedo = max(float3(1,1,1)*smoothstep(9,10,d),o.Albedo)*.5;
 			//o.Albedo *= texCUBE (_CubeMap, IN.worldRefl).rgb;
 		//	o.Alpha = IN.customColor.a;
-			o.Emission = texCUBE (_CubeMap, IN.worldRefl).rgb;
+		//	o.Emission = texCUBE (_CubeMap, IN.worldRefl).rgb;
 			//o.Alpha = 0.5;
 		}
 
