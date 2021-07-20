@@ -2,6 +2,8 @@
 #### &copy; Dr. Russell Campbell, and Eli Landa
 ##### Vancouver Island University, Nanaimo, British Columbia, Canada
 
+<img src="images/SimChopIcon.png" width="18%">
+
 [![](https://img.shields.io/discord/849621464541429781.svg?label=discord&logo=discord)](https://discord.gg/N2yPtpFYpE)
 
 | ![](images/Cloud_Sim.gif) | ![](images/Liquid_Sim.gif) |
