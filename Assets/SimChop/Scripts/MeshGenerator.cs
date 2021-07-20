@@ -6,16 +6,15 @@ using UnityEngine;
 public class MeshGenerator : MonoBehaviour
 {
 	Mesh mesh;
-	Vector3[] vertices;
-	int[] triangles;
+	List<Vector3> vertices;
+	List<int> triangles;
 	CameraData data;
-	
-	// This probably causes excessive use of stack memory... not sure of a way around this for now.
-	private const int MAX_VERTICES = 30000000;
 	
 	void OnEnable()
 	{
 		Simulation.SetFrustumEvent += SetData;
+		vertices = new List<Vector3>();
+		triangles = new List<int>();
 	}
 	
 	public void SetData(CameraData cameraData)
@@ -38,10 +37,7 @@ public class MeshGenerator : MonoBehaviour
 	// 2021 July 18, Russell Campbell
 	// These are my plane frustum calculations.
 	void CreatePlanes()
-	{
-		Vector3[] v = new Vector3[MAX_VERTICES];
-		int[] tris = new int[6*MAX_VERTICES];
-		
+	{	
 		Camera cam = Camera.main;
 		Matrix4x4 camMap =
 			Matrix4x4.Rotate(cam.transform.rotation).inverse *
@@ -73,12 +69,14 @@ public class MeshGenerator : MonoBehaviour
 			{
 				for (int x = 0; x < numX; x++)
 				{
-					v[v_count++] = 
+					vertices.Add( 
 						new Vector3(
 							dx * x - half_w,
 							dy * y - half_h,
 							depth
-						);
+						)
+					);
+					v_count++;
 				}
 			}
 			// construct triangles for one plane at a time (easier to manage)
@@ -87,23 +85,16 @@ public class MeshGenerator : MonoBehaviour
 				for (int x = 0; x < numX-1; x++)
 				{
 					// two triangles for each row and column; built as "forward slash" top triangle first, then bottom triangle
-					tris[i_count++] = prev_v_count + x     +  y*numX;
-					tris[i_count++] = prev_v_count + x     + (y+1)*numX;
-					tris[i_count++] = prev_v_count + x + 1 +  y*numX;
-					tris[i_count++] = prev_v_count + x     + (y+1)*numX;
-					tris[i_count++] = prev_v_count + x + 1 + (y+1)*numX;
-					tris[i_count++] = prev_v_count + x + 1 +  y*numX;
+					triangles.Add( prev_v_count + x     +  y*numX);
+					triangles.Add( prev_v_count + x     + (y+1)*numX);
+					triangles.Add( prev_v_count + x + 1 +  y*numX);
+					triangles.Add( prev_v_count + x     + (y+1)*numX);
+					triangles.Add( prev_v_count + x + 1 + (y+1)*numX);
+					triangles.Add( prev_v_count + x + 1 +  y*numX);
+					i_count += 6;
 				}
 			}
 		}
-		
-		vertices = new Vector3[v_count];
-		for (int i = 0; i < v_count; i++)
-			vertices[i] = v[i];
-		triangles = new int[i_count];
-		for (int i = 0; i < i_count; i++)
-			triangles[i] = tris[i];
-		
 	}
 	
 	// Brackey's
@@ -111,8 +102,8 @@ public class MeshGenerator : MonoBehaviour
 	{
 		mesh.Clear();
 		
-		mesh.vertices = vertices;
-		mesh.triangles = triangles;
+		mesh.vertices = vertices.ToArray();
+		mesh.triangles = triangles.ToArray();
 		
 		mesh.RecalculateNormals();
 	}
