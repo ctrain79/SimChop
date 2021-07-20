@@ -7,7 +7,7 @@
 | ![](images/Cloud_Sim.gif) | ![](images/Liquid_Sim.gif) |
 |---|---|
 
-![](images/Voronoi_Color_Space.png)
+<img src="images/Voronoi_Color_Space.png" width="49%">
 
 <br>
 
