@@ -14,7 +14,7 @@ public struct MapInterleave : IJobFor
 	[ReadOnly] public int mortonBitNum;
 	[ReadOnly] public float scale;
 	
-	public NativeArray<int> numInsideFrustum; // singleton for returning value
+	public NativeArray<int> numInFrustum; // singleton for returning value
 	
 	[ReadOnly] public NativeArray<Matrix4x4> camMap;
 	[ReadOnly] public NativeArray<Vector3> offset;
@@ -33,12 +33,12 @@ public struct MapInterleave : IJobFor
 				pos[i].z,
 				1
 			);
-	
+		
 		if (
 			// cull the frustum, but include particles near the edges
 			p.x <= camW * p.z + 2*radius && 
 			p.y <= camH * p.z + 2*radius && 
-			p.z <= far + 2*radius && 
+			p.z <= far && 
 			p.x >= -camW * p.z - 2*radius && 
 			p.y >= -camH * p.z - 2*radius && 
 			p.z >= -radius
@@ -57,9 +57,9 @@ public struct MapInterleave : IJobFor
 				y = y >> 1;
 				z = z >> 1;
 			}
-			frustumArray[numInsideFrustum[0]] = transformed[i];
-			interleaved[numInsideFrustum[0]] = result;
-			numInsideFrustum[0]++;
+			frustumArray[numInFrustum[0]] = transformed[i];
+			interleaved[numInFrustum[0]] = result;
+			numInFrustum[0]++;
 		}
 	}
 }

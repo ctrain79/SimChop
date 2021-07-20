@@ -25,9 +25,10 @@ public class Simulation : MonoBehaviour
 	[SerializeField, Range(0, 3)]
 	public float emission = default;
 	private const float MAX_RADIUS = 10;
-	[SerializeField, Range(0.5f, MAX_RADIUS)]
+	[SerializeField, Range(2f, MAX_RADIUS)]
 	public float radius = 4;
-	[SerializeField, Range(1, 30)]
+	private float lastRadius = 0;
+	[SerializeField, Range(1, 70)]
 	public int scanNumber = default;
 	
 	// TO DO: group together into [Serializable] struct so fields are collapsible
@@ -50,7 +51,7 @@ public class Simulation : MonoBehaviour
 	public bool displayParticleSceneViewGizmos = default; 
 	
 	// set to public if you want to keep track of it in the editor (but you obviously cannot edit the number)
-	int numInsideFrustum;
+	public int numInsideFrustum;
 	
 	float precision; // number of bits for each coordinate value to make Morton codes for interleaving
 	
@@ -67,13 +68,26 @@ public class Simulation : MonoBehaviour
 	Camera cam;
 	
 	void setPrecisionAndDimensions() {
+		lastRadius = radius;
+		// adjust far plane to deal with back cell wall not being usable for lookups because of double-interleaving
+		far += 2*(radius+1);
 		cam = Camera.main;
 		camH = Mathf.Tan(cam.fieldOfView*Mathf.PI/360);
 		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(cam.fieldOfView, cam.aspect)*Mathf.PI/360);
 		width = 2.05f * camW * far;
 		height = 2.05f * camH * far;
 		depth = far - near;
-		span = (depth-radius) / numOfLevels;
+		span = (depth-radius-2*(radius+1)) / numOfLevels;
+		
+		Debug.Log("span = " + span);
+		Debug.Log(
+			"width = " + 
+			width + 
+			" height = " + 
+			height + 
+			" depth = " + 
+			depth
+		);
 		
 		CameraData camData = new CameraData(
 			new Vector3(width, height, depth),
@@ -86,10 +100,18 @@ public class Simulation : MonoBehaviour
 		);
 		SetFrustumEvent(camData);
 		
-		float max = Mathf.Max(width, height, depth);
-		precision = Mathf.Log(max/(radius+1), 2) - 1; // instead of taking the floor, we can scale interleaving larger than displayed volume
+		float min = Mathf.Min(width, height, depth);
+		precision = Mathf.Log(min/(radius+1), 2) - 1; // instead of taking the floor, we can scale interleaving larger than displayed volume
+		Debug.Log("precision = " + precision);
+		
 		// The fractional part of the precision controls linear scale between one rectangular volume and its larger double-sidelength volume
-		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 + precision - Mathf.Floor(precision));
+		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 - 0.5f*(precision - Mathf.Floor(precision)));
+		//scale = Mathf.Pow(2, Mathf.Ceil(precision)) / max;
+		
+		Debug.Log("scale = " + scale);
+		float sidelength = 2*(radius+1)*Mathf.Pow(2, Mathf.Floor(precision));
+		Debug.Log("Morton code width = " + sidelength);
+		Debug.Log("Morton code cell length is " + 2*(radius+1)/(1 - 0.5f*(precision - Mathf.Floor(precision))));
 		// Morton code interleaving will then always cover the rectangular volume.
 	}
 	
@@ -253,10 +275,6 @@ public class Simulation : MonoBehaviour
 		setPrecisionAndDimensions();
 		NumberOfParticlesChangedEvent(spawnCount);
 		
-		// TO DO: get rid of leftover particles hanging around when spawn count is zero
-		//positionsArray.Clear(MAX_PARTICLES);
-		
-		
 		int j = 0;
 		foreach (GameObject obj in simObjs){
 			if (j < spawnCount)
@@ -274,7 +292,10 @@ public class Simulation : MonoBehaviour
 	
 	void updatePositions(){
 			
-		if (spawnCount > 0 && spawnCount != lastSpawnCount) {
+		if (
+			(spawnCount >= 0 && spawnCount != lastSpawnCount) ||
+			!Mathf.Approximately(lastRadius, radius)
+		) {
 			lastSpawnCount = spawnCount;
 			TakeDown();
 			Setup();
@@ -362,9 +383,9 @@ public class Simulation : MonoBehaviour
 			near = near,
 			far = far,
 			radius = radius,
-			mortonBitNum = Mathf.CeilToInt(precision),
+			mortonBitNum = Mathf.FloorToInt(precision),
 			scale = scale,
-			numInsideFrustum = jobNumInVol,
+			numInFrustum = jobNumInVol,
 			camMap = camMap,
 			offset = jobOffset,
 			pos = positionsArray,

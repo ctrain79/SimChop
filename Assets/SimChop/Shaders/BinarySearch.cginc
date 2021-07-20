@@ -86,15 +86,16 @@ uint2 getInterleaved(
 	float3 w_pos,
 	float3 shift,
 	uint first_digits, 
-	uint digits, 
+	uint digits,
 	float precision,
 	float scale
 ) {
 	uint2 interleaved = 
 		{ 0, 0 };
-	uint iX = floor(w_pos.x*scale) + (1 + frac(precision))*shift.x;
-	uint iY = floor(w_pos.y*scale) + (1 + frac(precision))*shift.y;
-	uint iZ = floor(w_pos.z*scale) + (1 + frac(precision))*shift.z;
+		
+	uint iX = floor(w_pos.x*scale) + shift.x;
+	uint iY = floor(w_pos.y*scale) + shift.y;
+	uint iZ = floor(w_pos.z*scale) + shift.z;
 	
 	for(uint k = 0; k < first_digits; k++){
 		interleaved.x |= (0x1 & iZ) << (3*k);
@@ -134,7 +135,7 @@ float4 lookup(
 	float3 dim, 
 	int num_inside_vol
 ) {
-	for(int j = -10; j < scan_num + 30; j++){
+	for(int j = -1 - scan_num; j < scan_num; j++){
 			
 		fixed4 p = tex3Dlod(tex, posCoord_index(i+j, dim, num_inside_vol));
 		float distance = length((w_pos.xyz - float3(p.rgb))*scale);

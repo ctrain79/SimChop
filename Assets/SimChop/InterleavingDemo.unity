@@ -1104,12 +1104,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1831d6db4135bbb4299df1d7b83f2e66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnCount: 1827
-  alpha: 0.074
-  rolloff: 0.931
+  spawnCount: 2048
+  alpha: 0.244
+  rolloff: 0.557
   emission: 0.37
-  radius: 10
-  scanNumber: 30
+  radius: 5
+  scanNumber: 40
   near: 0.3
   far: 100
   source: {fileID: 1909415152}
@@ -1120,6 +1120,7 @@ MonoBehaviour:
   particle: {fileID: 829214448227663622, guid: d3b2d14bc30e0c04b93fd10259d04b5c, type: 3}
   particlesVisibleInHierarchy: 1
   displayParticleSceneViewGizmos: 0
+  numInsideFrustum: 0
   computeOrder: {fileID: 7200000, guid: 6cf891b594722814bb8f530314e93486, type: 3}
 --- !u!4 &1607541083
 Transform:
