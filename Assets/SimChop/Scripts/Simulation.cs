@@ -10,12 +10,12 @@ using Unity.Collections;
 public class Simulation : MonoBehaviour
 {
 	// When Unity fully releases DOTS we will probably be able to have 10,000 particles.
-	private const int MAX_PARTICLES = 4096;
+	private const int MAX_PARTICLES = 8192;
 	
 	// TO DO: group together into [Serializable] struct so fields are collapsible
 	[Header("Hot Swappable")]
 	
-	[SerializeField, Range(0, MAX_PARTICLES-1)]
+	[SerializeField, Range(0, MAX_PARTICLES)]
 	public int spawnCount = default;
 	private int lastSpawnCount;
 	[SerializeField, Range(0, 1)]

@@ -1028,12 +1028,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1831d6db4135bbb4299df1d7b83f2e66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnCount: 2048
+  spawnCount: 4096
   alpha: 0.244
   rolloff: 0.557
   emission: 0.37
-  radius: 5
-  scanNumber: 40
+  radius: 5.125
+  scanNumber: 48
   near: 0.3
   far: 100
   source: {fileID: 1909415152}
@@ -1041,7 +1041,7 @@ MonoBehaviour:
   numOfLevels: 30
   levelsVisibleInHierarchy: 1
   vertexDelta: 0.5
-  particle: {fileID: 221328580278032542, guid: e2bd3e5c85bbf8a4e9b8765171bd0b84, type: 3}
+  particle: {fileID: 829214448227663622, guid: d3b2d14bc30e0c04b93fd10259d04b5c, type: 3}
   particlesVisibleInHierarchy: 1
   displayParticleSceneViewGizmos: 0
   numInsideFrustum: 0
@@ -1348,7 +1348,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1801984763}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -500, y: -15, z: -500}
+  m_LocalPosition: {x: -500, y: 0, z: -500}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
