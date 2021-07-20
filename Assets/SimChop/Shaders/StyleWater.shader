@@ -209,7 +209,7 @@ Shader "Unlit/StyleWater"
 		{
 			o.Alpha = smoothstep(editor_radius, editor_radius*editor_rolloff, IN.dist) * editor_alpha;
 			o.Albedo =float3(0,.6,1.)*smoothstep(editor_radius,editor_radius*editor_rolloff,IN.dist);
-			o.Albedo = max(float3(1,1,1)*smoothstep(editor_radius*editor_rolloff*.5,editor_radius,IN.dist),o.Albedo)*.5;
+			o.Albedo = max(float3(1,1,1)*smoothstep(editor_radius*editor_rolloff*.5,editor_radius,IN.dist),o.Albedo)*.1;
 			o.Emission = texCUBE (_CubeMap, IN.worldRefl).rgb*editor_emission;
 
 		}
