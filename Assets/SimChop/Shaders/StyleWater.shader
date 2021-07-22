@@ -100,7 +100,7 @@ Shader "Unlit/StyleWater"
 					pos_index(num_inside_vol-1, tex_dimensions)
 				);
 
-			float scale = pow(2, floor(precision)) * (1 - 0.5*frac(precision));
+			float scale = pow(2, floor(precision)) * (0.5 + 0.5*frac(precision));
 
 			uint2 interleaved =
 				getInterleaved(
