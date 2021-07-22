@@ -674,10 +674,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1077043692694439379, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: m_Layer
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: far
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: radius
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: source
       value: 
       objectReference: {fileID: 1909415152}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: numOfLevels
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: vertexDelta
+      value: 0.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
 --- !u!1001 &6869566971872147945

@@ -25,11 +25,12 @@ public class Simulation : MonoBehaviour
 	[SerializeField, Range(0, 3)]
 	public float emission = default;
 	private const float MAX_RADIUS = 10;
-	[SerializeField, Range(2f, MAX_RADIUS)]
+	[SerializeField, Range(2, MAX_RADIUS)]
 	public float radius = 4;
 	private float lastRadius = 0;
-	[SerializeField, Range(1, 70)]
-	public int scanNumber = default;
+	private float cellRadius;
+	//[SerializeField, Range(1, 70)]
+	private int scanNumber = default;
 	
 	// TO DO: group together into [Serializable] struct so fields are collapsible
 	[Header("Not Hot Swappable")]
@@ -45,6 +46,7 @@ public class Simulation : MonoBehaviour
 	public int numOfLevels = 30;
 	public bool levelsVisibleInHierarchy = true;
 	public float vertexDelta = default; // level surface geometry controls
+	private float sqrtVertDelta;
 	public GameObject particle;
 	public bool particlesVisibleInHierarchy = true;
 	[SerializeField]
@@ -69,17 +71,22 @@ public class Simulation : MonoBehaviour
 	
 	void setPrecisionAndDimensions() {
 		lastRadius = radius;
+		sqrtVertDelta = Mathf.Sqrt(vertexDelta);
+		
+		float colliderR = particle.GetComponent<SphereCollider>().radius;
+		if (radius < colliderR)
+			cellRadius = colliderR + sqrtVertDelta;
+		else
+			cellRadius = radius + sqrtVertDelta;
 		// adjust far plane to deal with back cell wall not being usable for lookups because of double-interleaving
-		far += 2*(radius+1);
+		far += 2*cellRadius;
 		cam = Camera.main;
 		camH = Mathf.Tan(cam.fieldOfView*Mathf.PI/360);
 		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(cam.fieldOfView, cam.aspect)*Mathf.PI/360);
 		width = 2.05f * camW * far;
 		height = 2.05f * camH * far;
 		depth = far - near;
-		span = (depth-radius-2*(radius+1)) / numOfLevels;
 		
-		Debug.Log("span = " + span);
 		Debug.Log(
 			"width = " + 
 			width + 
@@ -89,6 +96,10 @@ public class Simulation : MonoBehaviour
 			depth
 		);
 		
+		if (!playing)
+			span = (depth-radius-2*cellRadius) / numOfLevels;
+		
+		Debug.Log("span = " + span);
 		CameraData camData = new CameraData(
 			new Vector3(width, height, depth),
 			near,
@@ -101,17 +112,23 @@ public class Simulation : MonoBehaviour
 		SetFrustumEvent(camData);
 		
 		float min = Mathf.Min(width, height, depth);
-		precision = Mathf.Log(min/(radius+1), 2) - 1; // instead of taking the floor, we can scale interleaving larger than displayed volume
+		precision = Mathf.Log(min/cellRadius, 2) - 1; // instead of taking the floor, we can scale interleaving larger than displayed volume
 		Debug.Log("precision = " + precision);
 		
 		// The fractional part of the precision controls linear scale between one rectangular volume and its larger double-sidelength volume
-		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 - 0.5f*(precision - Mathf.Floor(precision)));
-		//scale = Mathf.Pow(2, Mathf.Ceil(precision)) / max;
+		float frac = precision - Mathf.Floor(precision);
+		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (0.5f + 0.5f*frac);
 		
-		Debug.Log("scale = " + scale);
-		float sidelength = 2*(radius+1)*Mathf.Pow(2, Mathf.Floor(precision));
-		Debug.Log("Morton code width = " + sidelength);
-		Debug.Log("Morton code cell length is " + 2*(radius+1)/(1 - 0.5f*(precision - Mathf.Floor(precision))));
+		float sidelength = 2*cellRadius;
+		float vol = Mathf.Pow(sidelength, 3);
+		Debug.Log("vol = " + vol);
+		
+		float approxScanNum = 0.5925f*Mathf.Pow(sidelength/(colliderR*(0.5f + 0.5f*frac)), 3)/Mathf.PI;
+		scanNumber = Mathf.CeilToInt(approxScanNum);
+		
+		Debug.Log("sidelength = " + sidelength);
+		Debug.Log("approxScanNum = " + approxScanNum);
+		Debug.Log("Morton code cell length is " + 2*cellRadius/(0.5f + 0.5f*(precision - Mathf.Floor(precision))));
 		// Morton code interleaving will then always cover the rectangular volume.
 	}
 	
@@ -216,6 +233,7 @@ public class Simulation : MonoBehaviour
 	void OnEnable()
 	{
 		setPrecisionAndDimensions();
+		
 		// initialize pool of particles
 		simObjs = new Stack<GameObject>();
 		volumeCollider = gameObject.GetComponent<BoxCollider>();

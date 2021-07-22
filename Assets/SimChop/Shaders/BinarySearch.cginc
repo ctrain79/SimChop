@@ -135,7 +135,7 @@ float4 lookup(
 	float3 dim, 
 	int num_inside_vol
 ) {
-	for(int j = -1 - scan_num; j < scan_num; j++){
+	for(int j = -40 - scan_num; j < scan_num + 40; j++){
 			
 		fixed4 p = tex3Dlod(tex, posCoord_index(i+j, dim, num_inside_vol));
 		float distance = length((w_pos.xyz - float3(p.rgb))*scale);

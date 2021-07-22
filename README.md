@@ -70,25 +70,25 @@ An example of some reasonable settings for fog in the `InterleavingDemo` Scene t
 
 At least for early versions, the particle prefab Sphere Collider radius needs to match closely with the `Radius` for shader display. This helps avoid particles popping in and out of view (henceforth called "flicker").
 
-The system obviously handles a lower number of particles fairly well, and debugging/testing is ongoing for more. You can still try to add more than 2048 particles, but the configuration for `Radius` and increasing the `Scan Number` *may* help reduce flicker. It is possible to set options so that 4096 particles can get about 30 fps on higher-end graphics cards.
+The system obviously handles a lower number of particles fairly well, and debugging/testing is ongoing for more. You can still try to add more than 2048 particles, but there are still a few configurations for `Radius` and a smaller Sphere Collider radius that will cause flicker.
 
-You may have more powerful graphics hardware and know how to use it. The system will still work if you hard code a change to the `MAX_PARTICLES` constant in `Simulation.cs`. Although nothing crashed with testing 32768 particles, the fps with NVIDIA GeForce RTX 3070 was around 0.5.
+It is possible to set options so that 4096 particles can get about 30 fps on higher-end graphics cards, but this is mostly for matching radii. You may have more powerful graphics hardware and know how to use it. The system will still work if you hard code a change to the `MAX_PARTICLES` constant in `Simulation.cs`. Although nothing crashed with testing 32768 particles, the fps with NVIDIA GeForce RTX 3070 was around 0.5.
 
-A few configurations that have been tested to stress the system and still mostly avoid flicker:
+A few configurations that have been tested to find the limitations of the system and still mostly avoid flicker:
 
-| `Radius` (`Simulation.cs`) | `Radius` (collider) | `Num Of Levels` | `Scan Number` | `Spawn Count` |
-|----|----|----|----|----|
-| 10 | 8.5 or more | 30 | 70 | 4096 |
-| 5.125 | 4 or more | 30 | 48 | 4096 |
-| 2 | 2 | 30 | 30 | 4096 |
+| `Radius` (`Simulation.cs`) | `Radius` (collider) | `Num Of Levels` | `Spawn Count` |
+|----|----|----|----|
+| 10 | 8.5 or more | 30 | 4096 |
+| 5.125 | 4 or more | 30 | 4096 |
+| 2 | 2 | 30 | 4096 |
 
 The above test were done with `Near = 0.3` and `Far = 100`.
 
-It helps if the difference between the radii are whole numbers with a fractional perfect division of two, so linear combinations of 1, 0.5, 0.25, 0.125, etc. Start with the collider radius just a bit lower than you would like, and add on as needed until flicker is almost eliminated. Then increase the `Scan Number` slightly to get rid of the last bit of flicker. 
+`Radius` can now be changed during play with more flexibility than in previous versions and still mostly avoid flicker.
 
 Note that in the Editor, you will have faster frame rates when the Game View is docked in the same window as the Scene View.
 
-The volume covering the camera depends on the aspect ratio of the window it displays inside&mdash;and the correct geometry to fit the camera view is generated at the start of play. Therefore, you will need to restart play to have the particles properly display if you need a different-sized window. If you forget to do this, you will see artefacts of geometry lines near the edge of the window. This is also an issue if you change the particle display radius from smaller to larger.
+The volume covering the camera depends on the aspect ratio of the window it displays inside&mdash;and the correct geometry to fit the camera view is generated at the start of play. Therefore, you will need to restart play to have the particles properly display if you need a different-sized window. If you forget to do this, you will see artefacts of geometry lines near the edge of the window.
 
 <br>
 

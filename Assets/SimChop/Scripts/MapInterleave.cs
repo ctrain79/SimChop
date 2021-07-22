@@ -38,7 +38,7 @@ public struct MapInterleave : IJobFor
 			// cull the frustum, but include particles near the edges
 			p.x <= camW * p.z + 2*radius && 
 			p.y <= camH * p.z + 2*radius && 
-			p.z <= far && 
+			p.z <= far && // already including some scaling of the depth for furthest plane geometry to display particles
 			p.x >= -camW * p.z - 2*radius && 
 			p.y >= -camH * p.z - 2*radius && 
 			p.z >= -radius

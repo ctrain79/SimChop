@@ -78,7 +78,8 @@ Shader "SimChop/RipplingFog"
 			
 			float3 closest = vol_dimensions;
 			uint closest_i = 0;
-			float d = editor_radius + 1;
+			float r = editor_radius + sqrt(editor_vertex_delta);
+			float d = r;
 			
 			// get first and last particle Morton codes
 			fixed4 first = 
@@ -92,7 +93,7 @@ Shader "SimChop/RipplingFog"
 					pos_index(num_inside_vol-1, tex_dimensions)
 				);
 			
-			float scale = pow(2, floor(precision)) * (1 - 0.5*frac(precision));
+			float scale = pow(2, floor(precision)) * (0.5 + 0.5*frac(precision));
 			
 			uint2 interleaved = 
 				getInterleaved(
@@ -103,6 +104,13 @@ Shader "SimChop/RipplingFog"
 					precision,
 					scale
 				);
+			
+			if (
+				(interleaved[0] < first.x && interleaved[1] < first.y) ||
+				(interleaved[0] > last.x  && interleaved[1] < last.y)
+			) {
+				v.vertex.x = 0.0/0.0;
+			}
 			
 			// check shifted neighbouring octants
 			uint locIndex = 
@@ -164,7 +172,7 @@ Shader "SimChop/RipplingFog"
 				d = result.w;
 			}}}
 			
-			if (d >= editor_radius + 1){
+			if (d >= r){
 				// usual trick of setting w to NaN is ignored by Unity with vertex/surface combo; so do x instead
 				v.vertex.x = 0.0/0.0;
 			} else {
@@ -175,7 +183,7 @@ Shader "SimChop/RipplingFog"
 			float ripple = wave3(w_pos);
 			v.vertex.x += 0.5*editor_vertex_delta*ripple;
 			v.vertex.y += 0.5*editor_vertex_delta*ripple;
-			v.vertex.z += span*0.2*ripple;
+			v.vertex.z += span*0.25*ripple;
 			
 			o.worldPos = worldPremap;
 			float lightness =
