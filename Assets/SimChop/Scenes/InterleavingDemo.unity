@@ -640,7 +640,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1077043692479737340, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1077043692479737340, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -683,6 +683,10 @@ PrefabInstance:
       value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: alpha
+      value: 0.32
+      objectReference: {fileID: 0}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: radius
       value: 6
       objectReference: {fileID: 0}
@@ -690,6 +694,18 @@ PrefabInstance:
       propertyPath: source
       value: 
       objectReference: {fileID: 1909415152}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: rolloff
+      value: 0.29
+      objectReference: {fileID: 0}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: emission
+      value: 0.31
+      objectReference: {fileID: 0}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: particle
+      value: 
+      objectReference: {fileID: 221328580278032542, guid: e2bd3e5c85bbf8a4e9b8765171bd0b84, type: 3}
     - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: numOfLevels
       value: 30

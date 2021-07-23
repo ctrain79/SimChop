@@ -31,10 +31,10 @@ float4 posCoord_index(
 
 int compare(
 	uint2 bits, 
-	fixed4 col
+	uint4 col
 ) {
-	uint big_col = (uint(col.r) << 16) + uint(col.g);
-	uint small_col = (uint(col.b) << 16) + uint(col.a);
+	uint big_col = (col.r << 16) + col.g;
+	uint small_col = (col.b << 16) + col.a;
 	if (bits.y < big_col){
 		return -1;
 	}
@@ -62,7 +62,7 @@ uint binarySearch(
 	uint low = 0;
 	uint high = num_inside_vol-1;
 	uint m = 0;
-	fixed4 col = fixed4(0, 0, 0, 1);
+	uint4 col = uint4(0, 0, 0, 1);
 	for (uint f = 0; f < iterations; f++){
 		if (stop < 1) {
 			m = (low + high)/2.0;
@@ -135,9 +135,9 @@ float4 lookup(
 	float3 dim, 
 	int num_inside_vol
 ) {
-	for(int j = -40 - scan_num; j < scan_num + 40; j++){
+	for(int j = -30 - 2*scan_num; j < 2*scan_num + 30; j++){
 			
-		fixed4 p = tex3Dlod(tex, posCoord_index(i+j, dim, num_inside_vol));
+		float4 p = tex3Dlod(tex, posCoord_index(i+j, dim, num_inside_vol));
 		float distance = length((w_pos.xyz - float3(p.rgb))*scale);
 
 		if(distance < d) {

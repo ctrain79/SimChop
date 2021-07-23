@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class SimulationHelper
+public class SimHelper
 {		
 	public static Matrix4x4 createMatrixScale(float width, float height, float depth) {
 		return Matrix4x4.Scale(

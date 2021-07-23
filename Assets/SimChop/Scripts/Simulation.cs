@@ -74,30 +74,34 @@ public class Simulation : MonoBehaviour
 		sqrtVertDelta = Mathf.Sqrt(vertexDelta);
 		
 		float colliderR = particle.GetComponent<SphereCollider>().radius;
-		if (radius < colliderR)
+		if (radius < colliderR) {
 			cellRadius = colliderR + sqrtVertDelta;
-		else
+		}
+		else {
 			cellRadius = radius + sqrtVertDelta;
+		}
 		// adjust far plane to deal with back cell wall not being usable for lookups because of double-interleaving
-		far += 2*cellRadius;
-		cam = Camera.main;
-		camH = Mathf.Tan(cam.fieldOfView*Mathf.PI/360);
-		camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(cam.fieldOfView, cam.aspect)*Mathf.PI/360);
-		width = 2.05f * camW * far;
-		height = 2.05f * camH * far;
-		depth = far - near;
 		
-		Debug.Log(
-			"width = " + 
-			width + 
-			" height = " + 
-			height + 
-			" depth = " + 
-			depth
-		);
+		// Debug.Log(
+		// 	"width = " + 
+		// 	width + 
+		// 	" height = " + 
+		// 	height + 
+		// 	" depth = " + 
+		// 	depth
+		// );
 		
-		if (!playing)
+		// TO DO: double check one-time calculations
+		if (!playing) {
+			cam = Camera.main;
+			camH = Mathf.Tan(cam.fieldOfView*Mathf.PI/360);
+			camW = Mathf.Tan(Camera.VerticalToHorizontalFieldOfView(cam.fieldOfView, cam.aspect)*Mathf.PI/360);
+			width = 2.05f * camW * far;
+			height = 2.05f * camH * far;
+			depth = far - near;
 			span = (depth-radius-2*cellRadius) / numOfLevels;
+			far += 2*cellRadius;
+		}
 		
 		Debug.Log("span = " + span);
 		CameraData camData = new CameraData(
@@ -113,22 +117,22 @@ public class Simulation : MonoBehaviour
 		
 		float min = Mathf.Min(width, height, depth);
 		precision = Mathf.Log(min/cellRadius, 2) - 1; // instead of taking the floor, we can scale interleaving larger than displayed volume
-		Debug.Log("precision = " + precision);
+		//Debug.Log("precision = " + precision);
 		
 		// The fractional part of the precision controls linear scale between one rectangular volume and its larger double-sidelength volume
 		float frac = precision - Mathf.Floor(precision);
-		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (0.5f + 0.5f*frac);
+		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 + frac);
 		
 		float sidelength = 2*cellRadius;
 		float vol = Mathf.Pow(sidelength, 3);
-		Debug.Log("vol = " + vol);
+		//Debug.Log("vol = " + vol);
 		
-		float approxScanNum = 0.5925f*Mathf.Pow(sidelength/(colliderR*(0.5f + 0.5f*frac)), 3)/Mathf.PI;
+		float approxScanNum = 0.5925f*Mathf.Pow(sidelength/(colliderR*(1 + frac)), 3)/Mathf.PI;
 		scanNumber = Mathf.CeilToInt(approxScanNum);
 		
-		Debug.Log("sidelength = " + sidelength);
-		Debug.Log("approxScanNum = " + approxScanNum);
-		Debug.Log("Morton code cell length is " + 2*cellRadius/(0.5f + 0.5f*(precision - Mathf.Floor(precision))));
+		// Debug.Log("sidelength = " + sidelength);
+		 Debug.Log("approxScanNum = " + approxScanNum);
+		// Debug.Log("Morton code cell length is " + 2*cellRadius/(1 + precision - Mathf.Floor(precision)));
 		// Morton code interleaving will then always cover the rectangular volume.
 	}
 	
@@ -190,33 +194,6 @@ public class Simulation : MonoBehaviour
 	{
 		//Debug.Log("NewSimulation Start");
 		playing = true;
-		//levels = new GameObject[numOfLevels];
-		for (int i = 0; i < numOfLevels; i++) {
-			// Back when we instantiated level surfaces instead of generating their geometry
-			
-			// levels[i] = Instantiate(
-			// 	level,
-			// 	new Vector3(0, 0, 0),
-			// 	Quaternion.identity,
-			// 	cam.transform
-			// );
-			// levels[i].transform.localScale =
-			// 	new Vector3(
-			// 		width,
-			// 		height,
-			// 		1
-			// 	);
-			// levels[i].transform.localRotation = Quaternion.identity;
-			// levels[i].transform.localPosition = new Vector3(0, 0, near + span*i + radius*0.5f);
-			
-			// so other people's save states will not save *thousands* of our levels and particles (see ParticleManager.InitializePool)
-			// HideFlags inHierarchy = 
-			// 	levelsVisibleInHierarchy ? 
-			// 	HideFlags.None : 
-			// 	HideFlags.HideInHierarchy;
-			// levels[i].hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | inHierarchy;
-			
-		}
 		
 		// setup textures for data strucures
 		interleavedTex = new Texture3D(X, Y, Z, TextureFormat.RGBAFloat, false);
@@ -328,11 +305,11 @@ public class Simulation : MonoBehaviour
 			}
 			
 			// control the bounds of particles we are tracking
-			unitScale = SimulationHelper.createMatrixScale(width, height, depth);
+			unitScale = SimHelper.createMatrixScale(width, height, depth);
 			
 			// controls mapping 3D space to the unit cube
-			Matrix4x4 posOctantMap = SimulationHelper.createMatrixMapToPosOctant();
-			Matrix4x4 unitMap = SimulationHelper.createMatrixMapToUnitCube(unitScale, near);
+			Matrix4x4 posOctantMap = SimHelper.createMatrixMapToPosOctant();
+			Matrix4x4 unitMap = SimHelper.createMatrixMapToUnitCube(unitScale, near);
 			
 			MapVolume mapJob = new MapVolume()
 			{
@@ -350,6 +327,7 @@ public class Simulation : MonoBehaviour
 			Shader.SetGlobalFloat("editor_radius", radius);
 			Shader.SetGlobalFloat("editor_rolloff", rolloff);
 			Shader.SetGlobalFloat("editor_vertex_delta", vertexDelta);
+			Shader.SetGlobalFloat("scale", scale);
 			Shader.SetGlobalFloat("span", span);
 			Shader.SetGlobalFloat("precision", precision);
 			Shader.SetGlobalInt("scan_num", scanNumber);
@@ -401,7 +379,7 @@ public class Simulation : MonoBehaviour
 			near = near,
 			far = far,
 			radius = radius,
-			mortonBitNum = Mathf.FloorToInt(precision),
+			mortonBitNum = Mathf.CeilToInt(precision),
 			scale = scale,
 			numInFrustum = jobNumInVol,
 			camMap = camMap,

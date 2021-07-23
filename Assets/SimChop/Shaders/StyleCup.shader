@@ -1,4 +1,4 @@
-Shader "Unlit/StyleWater"
+Shader "Unlit/StyleCup"
 {
 	Properties
 	{
@@ -52,7 +52,7 @@ Shader "Unlit/StyleWater"
 		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
 		uniform float3 tex_dimensions; // for the textures
 		uniform int num_inside_vol;
-
+	
 		float wave(float3 p, float w, float x, float y, float z)
 		{
 			return w*(sin(_Time.y + x*p.x + z*p.z) + sin(_Time.y + y*p.y - z*p.z));
@@ -60,12 +60,12 @@ Shader "Unlit/StyleWater"
 
 		float wave3(float3 p)
 		{
-			return
+			return 
 				wave(p, 0.3, 64, 64, 64) +
 				wave(p, 0.3, 16, 16, 16) +
 				wave(p, 0.3, 32, 32, 32);
 		}
-
+		
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
@@ -181,24 +181,9 @@ Shader "Unlit/StyleWater"
 
 			// get rid of emission ripple and vertex waving if you just want regular round particles
 			float ripple = wave3(w_pos);
-			v.vertex.x += 4*editor_vertex_delta*ripple;
-			v.vertex.y += 4*editor_vertex_delta*ripple;
+			v.vertex.x += 3*editor_vertex_delta*ripple;
+			v.vertex.y += 3*editor_vertex_delta*ripple;
 			v.vertex.z += span*0.15*ripple;
-			
-			float lightness =
-				saturate(
-					0.1 + 0.2*sin(0.05*_Time.x*(worldPremap.x + worldPremap.y)) + 
-					0.1 + 0.2*sin(0.025*_Time.x*worldPremap.y) + 
-					0.1 + 0.2*sin(0.02*_Time.x*worldPremap.z)
-				);
-			
-			o.customColor =
-				float4(
-					0.1*lightness,
-					0.4*lightness,
-					lightness,
-					(editor_radius - d)/editor_radius
-				);
 			
 		}
 		sampler2D _MainTex;
@@ -206,10 +191,11 @@ Shader "Unlit/StyleWater"
 		void surf(Input IN, inout SurfaceOutput o)
 		{
 			o.Alpha = smoothstep(editor_radius, editor_radius*editor_rolloff, IN.dist) * editor_alpha;
-			o.Albedo = IN.customColor.rgb*smoothstep(editor_radius,editor_radius*editor_rolloff,IN.dist);
-			//o.Albedo = max(float3(1,1,1)*smoothstep(editor_radius*editor_rolloff*.5,editor_radius,IN.dist),o.Albedo)*.1;
-			o.Emission = 0.6*texCUBE (_CubeMap, IN.worldRefl).rgb + editor_emission;
-
+			o.Albedo =float3(0,0,(editor_radius - IN.dist)/editor_radius)*smoothstep(editor_radius,editor_radius*editor_rolloff,IN.dist);
+			
+			// o.Albedo =float3(0,.6,1.)*smoothstep(editor_radius,editor_radius*editor_rolloff,IN.dist);
+			// o.Albedo = max(float3(1,1,1)*smoothstep(editor_radius*editor_rolloff*.5,editor_radius,IN.dist),o.Albedo)*.1;
+			o.Emission = 0.2*texCUBE (_CubeMap, IN.worldRefl).rgb*editor_emission;
 		}
 
 		ENDCG

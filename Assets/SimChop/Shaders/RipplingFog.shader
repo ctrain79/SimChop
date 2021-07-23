@@ -37,6 +37,7 @@ Shader "SimChop/RipplingFog"
 		uniform float editor_radius;
 		uniform float editor_rolloff;
 		uniform float editor_vertex_delta;
+		uniform float scale;
 		uniform float span;
 		uniform float precision;
 		uniform int scan_num;
@@ -44,7 +45,7 @@ Shader "SimChop/RipplingFog"
 		uniform float3 vol_dimensions; // for the volume where particle positions are mapped
 		uniform float3 tex_dimensions; // for the textures
 		uniform int num_inside_vol;
-			
+		
 		float wave(float3 p, float w, float x, float y, float z)
 		{
 			return w*(sin(_Time.y + x*p.x + z*p.z) + sin(_Time.y + y*p.y - z*p.z));
@@ -61,8 +62,7 @@ Shader "SimChop/RipplingFog"
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
-			uint digits = 3*floor(precision);
-			
+			uint digits = 3*ceil(precision);
 			
 			uint first_digits = 
 				(digits > 10) ?
@@ -82,18 +82,16 @@ Shader "SimChop/RipplingFog"
 			float d = r;
 			
 			// get first and last particle Morton codes
-			fixed4 first = 
+			uint4 first = 
 				tex3Dlod(
 					interleaved_tex, 
 					pos_index(0, tex_dimensions)
 				);
-			fixed4 last = 
+			uint4 last = 
 				tex3Dlod(
 					interleaved_tex, 
 					pos_index(num_inside_vol-1, tex_dimensions)
 				);
-			
-			float scale = pow(2, floor(precision)) * (0.5 + 0.5*frac(precision));
 			
 			uint2 interleaved = 
 				getInterleaved(
@@ -183,7 +181,7 @@ Shader "SimChop/RipplingFog"
 			float ripple = wave3(w_pos);
 			v.vertex.x += 0.5*editor_vertex_delta*ripple;
 			v.vertex.y += 0.5*editor_vertex_delta*ripple;
-			v.vertex.z += span*0.25*ripple;
+			v.vertex.z += span*0.15*ripple;
 			
 			o.worldPos = worldPremap;
 			float lightness =
@@ -192,7 +190,7 @@ Shader "SimChop/RipplingFog"
 					sin((1+sin(3*_Time.x))*0.2*worldPremap.y) + 
 					sin((1+sin(3*_Time.x))*0.2*worldPremap.z)
 				);
-			o.customColor = 
+			o.customColor =
 				float4(
 					0.1*lightness,
 					0.4*lightness,

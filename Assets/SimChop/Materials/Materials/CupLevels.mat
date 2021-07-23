@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: CupLevels
-  m_Shader: {fileID: 4800000, guid: acfd60fe905955c44b98e8dcecda3389, type: 3}
+  m_Shader: {fileID: 4800000, guid: dc25a4a732dd0a54abfe4f14b003aea6, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
