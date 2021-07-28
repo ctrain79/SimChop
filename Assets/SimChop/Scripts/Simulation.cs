@@ -120,8 +120,8 @@ public class Simulation : MonoBehaviour
 		//Debug.Log("precision = " + precision);
 		
 		// The fractional part of the precision controls linear scale between one rectangular volume and its larger double-sidelength volume
-		float frac = precision - Mathf.Floor(precision);
-		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 + frac);
+		float frac = precision - Mathf.Floor(precision); // but we need to smoothly scale from full size to double size
+		scale = Mathf.Pow(2, Mathf.Floor(precision)) * (1 + frac); // as radius increases, (2-frac) increases from 1 to 2
 		
 		float sidelength = 2*cellRadius;
 		float vol = Mathf.Pow(sidelength, 3);
