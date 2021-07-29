@@ -132,8 +132,8 @@ public class Simulation : MonoBehaviour
 		//float vol = Mathf.Pow(largerSidelength + 2*colliderR*ratio, 3);
 		//Debug.Log("vol = " + vol);
 		
-		float approxScanNum = 0.5925f*Mathf.Pow((largerSidelength + 2*colliderR*ratio)/(colliderR*ratio), 3)/Mathf.PI;
-		// finally have this number as tight as possible :-), at least until the Sphere Packing Conjecture is refined to a Theorem
+		float approxScanNum = 0.1767766954f*Mathf.Pow((largerSidelength + 2*colliderR*ratio)/(colliderR*ratio), 3);
+		// double-checked Sphere Packing and used Thomas C. Hales' Theorem: Pi/Sqrt(18) density
 		scanNumber = Mathf.CeilToInt(approxScanNum);
 		//Debug.Log("approxScanNum = " + approxScanNum);
 		

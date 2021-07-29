@@ -91,7 +91,7 @@ The volume of interest in the scene that covers the particles to render have the
 
 The Morton codes then perform lookup by scaling a requested location in the unit cube up to a cube of sidelength some power of 2. The `precision` controls this scaling and is calculated to fit the desired radius and cover the volume in view as closely as possible. The same scaling has to be done in the shaders for the particles to be quickly found out of thousands for those that are closest.
 
-The scan number is responsible for lookup within cells (similar to octree lookups) where the cells are larger and will fill with at most 78% density full of collider spheres (see the Sphere Packing Conjecture). This gives a strict upper bound on the number of particles within any cellular region.
+The scan number is responsible for lookup within cells (similar to octree lookups) where the cells are larger and will fill with at most about 74% density full of collider spheres (see Thomas C. Hales' proof of the Sphere Packing Conjecture). This gives a strict upper bound on the number of particles within any cellular region.
 
  You may have more powerful graphics hardware and know how to use it. The system will still work if you edit a change to the `MAX_PARTICLES` constant in `Simulation.cs`. Although nothing crashed with testing 32768 particles, the fps with NVIDIA GeForce RTX 3070 was around 0.5. The configuration settings have limits in place to avoid extreme calculations needed to run the particle simulation that would result in frame rates that would be unreasonably low and unlikey to be useful. If you are familiar with the code and have more powerful hardware, there is nothing to stop you from adjusting the limits as you need.
  
