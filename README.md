@@ -1,4 +1,4 @@
-# SimChop (beta, version 0.8.3)
+# SimChop (beta, version 0.8.4)
 #### &copy; Dr. Russell Campbell, and Eli Landa
 ##### Vancouver Island University, Nanaimo, British Columbia, Canada
 
