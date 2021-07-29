@@ -69,7 +69,7 @@ Shader "Unlit/StyleCup"
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
-			uint digits = 3*floor(precision);
+			uint digits = 3*(floor(precision)+1);
 
 
 			uint first_digits =
@@ -107,7 +107,6 @@ Shader "Unlit/StyleCup"
 					float3(0, 0, 0),
 					first_digits,
 					digits,
-					precision,
 					scale
 				);
 
@@ -144,7 +143,6 @@ Shader "Unlit/StyleCup"
 						float3(x, y, z),
 						first_digits,
 						digits,
-						precision,
 						scale
 					);
 				locIndex =

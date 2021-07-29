@@ -98,8 +98,7 @@ Shader "SimChop/RipplingFog"
 					w_pos,
 					float3(0, 0, 0), 
 					first_digits, 
-					digits, 
-					precision,
+					digits,
 					scale
 				);
 			
@@ -142,8 +141,7 @@ Shader "SimChop/RipplingFog"
 						w_pos,
 						float3(x, y, z), 
 						first_digits, 
-						digits, 
-						precision,
+						digits,
 						scale
 					);
 				locIndex = 

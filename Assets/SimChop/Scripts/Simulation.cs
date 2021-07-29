@@ -116,23 +116,26 @@ public class Simulation : MonoBehaviour
 		SetFrustumEvent(camData);
 		
 		float min = Mathf.Min(width, height, depth);
-		precision = Mathf.Log(min/cellSidelength, 2); // radius of particles ~ same as sidelength
+		precision = Mathf.Log(min/cellSidelength, 2) - 1; // radius of particles ~ same as sidelength
 		//Debug.Log("precision = " + precision);
 		
 		// cell size is a bit bigger, but no more than twice the length of cellSidelength
 		float largerSidelength = min*Mathf.Pow(0.5f, Mathf.Floor(precision));
+		//Debug.Log("largerSidelength = " + largerSidelength);
 		
 		// but we need to smoothly increase from normal size to double size
-		float ratio = largerSidelength/cellSidelength;
+		float ratio = largerSidelength/(2*cellSidelength);
+		//Debug.Log("ratio = " + ratio);
 		scale = Mathf.Pow(2, Mathf.Floor(precision))*ratio;
 		
-		float vol = Mathf.Pow(cellSidelength, 3);
+		// just to check
+		//float vol = Mathf.Pow(largerSidelength + 2*colliderR*ratio, 3);
 		//Debug.Log("vol = " + vol);
 		
-		float approxScanNum = 0.5925f*Mathf.Pow(cellSidelength/(colliderR*ratio), 3)/Mathf.PI;
+		float approxScanNum = 0.5925f*Mathf.Pow((largerSidelength + 2*colliderR*ratio)/(colliderR*ratio), 3)/Mathf.PI;
+		// finally have this number as tight as possible :-), at least until the Sphere Packing Conjecture is refined to a Theorem
 		scanNumber = Mathf.CeilToInt(approxScanNum);
-		
-		Debug.Log("approxScanNum = " + approxScanNum);
+		//Debug.Log("approxScanNum = " + approxScanNum);
 		
 		// Later, the unit cube gets scaled up by the scale amount.
 		// The number of digits in the Morton code always has one more
@@ -355,7 +358,7 @@ public class Simulation : MonoBehaviour
 			buildInterleaveShaderData(
 				"interleaved_shifted_half_unit_tex",
 				"coord_shifted_half_unit_tex",
-				Vector3.one*Mathf.Pow(0.5f, precision+1)
+				Vector3.one*Mathf.Pow(0.5f, Mathf.Floor(precision)+2) // half a cell unit
 			);
 			
 		}
@@ -427,8 +430,7 @@ public class Simulation : MonoBehaviour
 		
 		setupInterleavingTextures(
 			interleavedTexUniform,
-			coordTexUniform,
-			offset*Mathf.Pow(0.5f, precision)
+			coordTexUniform
 		);
 		
 	}
@@ -466,8 +468,7 @@ public class Simulation : MonoBehaviour
 	
 	private void setupInterleavingTextures(
 		string interleavedTexUniform,
-		string coordTexUniform,
-		Vector3 offset
+		string coordTexUniform
 	) {
 		
 		getTex();
