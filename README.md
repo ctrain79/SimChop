@@ -61,19 +61,17 @@ The `InterleavingDemo` scene includes a most basic setup of game objects to have
 
 ## `InterleavedVolume` Controls
 
-The Inspector for a game object that has the script `Simulation` added as a component (e.g., `InterleavedVolume` in the `InterleavingDemo` Scene) will give many controls.
+The Inspector for a game object that has the script `Simulation` added as a component (e.g., `InterleavedVolume` in the `InterleavingDemo` Scene) gives many controls.
 
-Note that in the Editor, you will have faster frame rates when the Game View is docked in the same window as the Scene View.
+Note that in the Editor, you will have higher frame rates when the Game View is docked in the same window as the Scene View.
 
-The particle prefab Sphere Collider radius is typically set to be smaller than the `Radius` for shader display, but you can also set it to be larger. Best performance has particle display radius equal to or smaller than, Sphere Collider radius. There are some extreme configurations that will have particles popping in and out of view (henceforth called "flicker"), and debugging is still ongoing.
+The particle prefab Sphere Collider `radius` is typically set to be smaller than the `Radius` for shader display, but you can also set the display radius to be larger than the Sphere Collider radius. Best performance has particle display radius equal to or smaller than Sphere Collider radius. When the display radius is much larger than the Sphere Collider radius, the frame rate will be lower.
 
-The system handles a lower number of particles fairly well. You can still try to add more than 2048 particles, but the frame rate will be slower the more you add.
+Debugging for when particles pop in and out of view (henceforth called "flicker") is now minimal and only rarely occurring near the corners of the volume, which will be debugged soon.
 
-It is possible to set options so that 4096 particles can get about 30 fps on higher-end graphics cards, but this is mostly for matching radii. You may have more powerful graphics hardware and know how to use it. The system will still work if you hard code a change to the `MAX_PARTICLES` constant in `Simulation.cs`. Although nothing crashed with testing 32768 particles, the fps with NVIDIA GeForce RTX 3070 was around 0.5.
+The system handles a lower number of particles fairly well. It is possible to set options so that 4096 particles can get about 30 fps on higher-end graphics cards, but this is mostly for matching radii and the frame rate will be lower the more particles you add.
 
-`Radius` can now be changed during play with more flexibility than in previous versions and still mostly avoid flicker, but the frame rate will drop the larger the difference between the particle display radius and the Sphere Collider radius. This is due to lookup within cells (similar to octree lookups) where the cells are larger and will fill with at most 78% density full of collider spheres (see the Sphere Packing Conjecture).
-
-The volume covering the camera depends on the aspect ratio of the window it displays inside&mdash;and the correct geometry to fit the camera view is generated at the start of play. Therefore, you may need to restart play to have the geometry/particles properly display if you need a different-sized window. This is mostly dealt with now, but you may see artefacts of geometry lines near the edge of the window if you resize it.
+The volume covering the camera depends on the aspect ratio of the window it displays inside&mdash;and the correct geometry to fit the camera view is generated at the start of play. Therefore, you may need to restart play to have the geometry/particles properly display if you need a different-sized window. This is mostly dealt with now, but you may see artefacts of geometry lines near the edge of the window if you resize it. It is recommended that the Game View be set to one of the preset constant aspect ratios, e.g.: `16:9 Aspect`, rather than a `Free Aspect` ratio.
 
 <br>
 
@@ -93,3 +91,7 @@ The volume of interest in the scene that covers the particles to render have the
 
 The Morton codes then perform lookup by scaling a requested location in the unit cube up to a cube of sidelength some power of 2. The `precision` controls this scaling and is calculated to fit the desired radius and cover the volume in view as closely as possible. The same scaling has to be done in the shaders for the particles to be quickly found out of thousands for those that are closest.
 
+The scan number is responsible for lookup within cells (similar to octree lookups) where the cells are larger and will fill with at most 78% density full of collider spheres (see the Sphere Packing Conjecture). This gives a strict upper bound on the number of particles within any cellular region.
+
+ You may have more powerful graphics hardware and know how to use it. The system will still work if you edit a change to the `MAX_PARTICLES` constant in `Simulation.cs`. Although nothing crashed with testing 32768 particles, the fps with NVIDIA GeForce RTX 3070 was around 0.5. The configuration settings have limits in place to avoid extreme calculations needed to run the particle simulation that would result in frame rates that would be unreasonably low and unlikey to be useful. If you are familiar with the code and have more powerful hardware, there is nothing to stop you from adjusting the limits as you need.
+ 
