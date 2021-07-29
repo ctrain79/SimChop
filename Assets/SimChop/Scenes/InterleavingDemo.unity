@@ -700,12 +700,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: emission
-      value: 0.31
+      value: 0.42
       objectReference: {fileID: 0}
     - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: particle
       value: 
       objectReference: {fileID: 221328580278032542, guid: e2bd3e5c85bbf8a4e9b8765171bd0b84, type: 3}
+    - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
+      propertyPath: spawnCount
+      value: 4096
+      objectReference: {fileID: 0}
     - target: {fileID: 1077043692761220968, guid: 5647bd3d5ac2c8a4fb68ddce4429426e, type: 3}
       propertyPath: numOfLevels
       value: 30

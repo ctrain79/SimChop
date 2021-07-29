@@ -62,7 +62,7 @@ Shader "SimChop/RipplingFog"
 		void vert (inout appdata_full v, out Input o)
 		{
 			UNITY_INITIALIZE_OUTPUT(Input,o);
-			uint digits = 3*ceil(precision);
+			uint digits = 3*(floor(precision)+1);
 			
 			uint first_digits = 
 				(digits > 10) ?
